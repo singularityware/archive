@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<meta name="description" content="   The Bootstrap Definition                   Previous        Next              The process of bootstrapping a Singularity container is equivalent to describing a recipe for the container creation. There are several recipe formats that Singularity supports, but only the primary format of version 2.2 will be documented here.Best Practices for BootstrappingWhen bootstrapping a container, it is best to consider the following:  Install packages, programs, data, and files into operating system locations (e.g. not /home, /tmp, or any other directories that might get commonly binded on).  If you require any special environment variables to be defined, add them the /environment file inside the container.  Files should never be owned by actual users, they should always be owned by a system account (UID &lt; 500).  Ensure that the container’s /etc/passwd, /etc/group, /etc/shadow, and no other sensitive files have anything but the bare essentials within them.  Do all of your bootstrapping via a definition file instead of manipulating the containers by hand (with the --writable options), this ensures greatest possibility of reproducibility and mitigates the black box effect.The Bootstrap Definition FileThere are multiple sections of the Singularity bootstrap definition file:  Header: The Header describes the core operating system to bootstrap within the container. Here you will configure the base operating system features that you need within your container. Examples of this include, what distribution of Linux, what version, what packages must be part of a core install.  Sections: The reset of the definition is comprised of sections or blobs of data. Each section is defined by a % character followed by the name of the particular section. All sections are optional.The header fields:Bootstrap:The Bootstrap:  keyword identifies the Singularity module that will be used for building the core components of the operating system. There are several supported modules at the time of this writing:yumThe YUM bootstrap module uses YUM on the host system to bootstrap the core operating system that exists within the container. This module is applicable for bootstrapping distributions like Red Hat, Centos, and Scientific Linux. When using the yum bootstrap module, several other keywords may also be necessary to define:  MirrorURL: This is the location where the packages will be downloaded from. When bootstrapping different RHEL/YUM compatible distributions of Linux, this will define which variant will be used (e.g. the only difference in bootstrapping Centos from Scientific Linux is this line.  OSVersion: When using the yum bootstrap module, this keyword is conditional and required only if you have specified a %{OSVERSION} variable name in the MirrorURL keyword. If the MirrorURL definition does not have the %{OSVERSION} variable, OSVersion can be omitted from the header field.  Include: By default the core operating system is an extremely minimal base, which may or may not include the means to even install additional packages. The Include keyword should define any additional packages which should be used and installed as part of the core operating system bootstrap. The best practice is to keep this keyword usage as minimal as possible such that you can then use the %inside scriptlet (explained shortly) to do additional installations. One common package you may want to include here is yum itself.Warning, there is a major limitation with using YUM to bootstrap a container and that is the RPM database that exists within the container will be created using the RPM library and Berkeley DB implementation that exists on the host system. If the RPM implementation inside the container is not compatible with the RPM database that was used to create the container, once the container has been created RPM and YUM commands inside the container may fail. This issue can be easily demonstrated by bootstrapping an older RHEL compatible image by a newer one (e.g. bootstrap a Centos 5 or 6 container from a Centos 7 host).debootstrapThe Debian bootstrap module is a tool which is used specifically for bootstrapping distributions which utilize the .deb package format and apt-get repositories. This module will bootstrap any of the Debian and Ubuntu based distributions. When using the debootstrap module, the following keywords must also be defined:  MirrorURL: This is the location where the packages will be downloaded from. When bootstrapping different Debian based distributions of Linux, this will define which varient will be used (e.g. specifying a different URL can be the difference between Debian or Ubuntu).  OSVersion: This keyword must be defined as the alpha-character string associated with the version of the distribution you wish to use. For example, trusty or stable.  Include: As with the yum module, the Include keyword will install additional packages into the core operating system and the best practice is to supply only the bare essentials such that the %inside scriptlet has what it needs to properly completely the bootstrap.archThe Arch Linux bootstrap module does not name any additional keywords at this time. By defining the arch module, you have essentially given all of the information necessary for that particular bootstrap module to build a core operating system.dockerThe Docker bootstrap module will create a core operating system image based on an image hosted on a particular Docker Registry server. By default it will use the primary Docker Library, but that can be overridden. When using the docker module, several other keywords may also be defined:  From: This keyword defines the string of the registry name used for this image in the format [name]:[version]. Several examples are: ubuntu:latest, centos:6, alpine:latest, or debian (if the version tag is ommitted, :latest is automatically used).  IncludeCmd: This keyword tells Singularity to utilize the Docker defined Cmd as the %runscript (defined below), if the Cmd is defined.  Registry: If the registry you wish to download the image from is not from the main Docker Library, you can define it here.  Token: Sometimes the Docker API (depending on version?) requires an authorization token which is generated on the fly. Toggle this with a yes or no here.Bootstrap sections:Once the Bootstrap module has completed, the sections are identified and utilized if present. The following sections are supported in the bootstrap definition, and integrated during the bootstrap process in the following order:%setupThis section blob is a Bourne shell scriptlet which will be executed on the host outside the container during bootstrap. The path to the container is accessible from within the running scriptlet environment via the variable $SINGULARITY_ROOTFS. For example, consider the following scriptlet:%setup    echo "Looking in directory '$SINGULARITY_ROOTFS' for /bin/sh"    if [ ! -x "$SINGULARITY_ROOTFS/bin/sh" ]; then        echo "Hrmm, this container does not have /bin/sh installed..."        exit 1    fi    exit 0As we investigate this example scriptlet, you will first see this is the %outside scriptlet as would be defined within our bootstrap. The following line simply echos a message and prints the variable $SINGULARITY_ROOTFS which is defined within the shell context that this scriptlet runs in. Then we check to see if /bin/sh is executable, and if it is not, we print an error message. Notice the exit 1. The exit value of the scriptlets communicates if the scriptlet ran successfully or not. As with any shell return value, an exit of 0 (zero) means success, and any other exit value is a failure.note: Any uncaught command errors that occur within the scriptlet will cause the entire build process to halt!%postSimilar to the %setup section, this section will be executed once during bootstrapping, but this scriptlet will be run from inside the container. This is where you should put additional installation commands, downloads, and configuration into your containers. Here is an example to consider:%post	echo "Installing Development Tools YUM group"	yum -y groupinstall "Development Tools"	echo "Installing OpenMPI into container..."	mkdir /tmp/git	cd /tmp/git	git clone https://github.com/open-mpi/ompi.git	cd ompi	./autogen.pl	./configure --prefix=/usr/local	make	make install	/usr/local/bin/mpicc examples/ring_c.c -o /usr/bin/mpi_ring	cd /	rm -rf /tmp/git	exit 0The above example runs inside the container, so in this case we will first install the Centos YUM group development tools into the container, and then download Open MPI from the master branch from GitHub. We then build Open MPI and install it within the container. Next we compile one of the MPI test examples ring_c.c and install that to /usr/bin/mpi_ring. Finally we clean up and exit success.note: As with the %setup scriptlet, if any errors are encountered the entire process will fail.another note: This is not a good example of a reproducible definition because it is pulling Open MPI from a moving target. A better example, would be to pull a static released version, but this serves as a good example of building a %post scriptlet.%runscriptThe %runscript is another scriptlet, but it does not get executed during bootstrapping. Instead it gets persisted within the container to a file called /singularity which is the execution driver when the container image is run (either via the singularity run command or via executing the container directly).When the %runscript is executed, all options are passed along to the executing script at runtime, this means that you can (and should) manage argument processing from within your runscript. Here is an example of how to do that:%runscript	echo "Arguments received: $*"	exec /usr/bin/python "$@"In this particular runscript, the arguments are printed as a single string ($*) and then they are passed to /usr/bin/python via a quoted array ($@) which ensures that all of the arguments are properly parsed by the executed command. The exec command causes the given command to replace the current entry in the process table with the one that is to be called. This makes it so the runscript shell process ceases to exist, and the only process running inside this container is the called Python command.%testYou may choose to add a %test section to your definition file. This section will be run at the very end of the boostrapping process and will give you a chance to validate the container during the bootstrap process. You can also execute this scriptlet through the container itself, such that you can always test the validity of the container itself as you transport it to different hosts. Extending on the above Open MPI %post, consider this example:%test	/usr/local/bin/mpirun --allow-run-as-root /usr/bin/mpi_testThis is a simple Open MPI test to ensure that the MPI is build properly and communicates between processes as it should.For further examples, we recommend you take a closer look at the bootstrap command                Previous        Next                 Edit me                                                                                                                                                 Site last generated: Jul 26, 2017                             ">
+
+
+<meta name="name" content="The Bootstrap Definition">
+
+<meta name="thumbnail" content="http://singularity.lbl.gov/images/logo/logo.svg">
+
+
+
+
+<title>The Bootstrap Definition | Singularity</title>
+<link rel="stylesheet" href="assets/css/syntax.css">
+
+
+<link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+<!--<link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">-->
+<link rel="stylesheet" href="assets/css/modern-business.css">
+<link rel="stylesheet" href="assets/css/lavish-bootstrap.css">
+<link rel="stylesheet" href="assets/css/customstyles.css">
+<link rel="stylesheet" href="assets/css/theme-blue.css">
+
+<link rel="stylesheet" type="text/css" href="assets/css/asciinema-player.css" />
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.min.js"></script>
+<script src="assets/js/jquery.navgoco.min.js"></script>
+
+
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/anchor-js/2.0.0/anchor.min.js"></script>
+<script src="assets/js/toc.js"></script>
+<script src="assets/js/customscripts.js"></script>
+
+<link rel="shortcut icon" href="images/favicon/favicon.ico">
+
+<!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+<!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+<!--[if lt IE 9]>
+<script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+<script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+<![endif]-->
+
+<link rel="alternate" type="application/rss+xml" title="" href="http://localhost:4005feed.xml">
+
+    <script>
+        $(document).ready(function() {
+
+            // Initialize navgoco with default options
+            $("#mysidebar").navgoco({
+                caretHtml: '',
+                accordion: true,
+                openClass: 'active', // open
+                save: false, // leave false or nav highlighting doesn't work right
+                cookie: {
+                    name: 'navgoco',
+                    expires: false,
+                    path: '/'
+                },
+                slide: {
+                    duration: 400,
+                    easing: 'swing'
+                }
+            });
+
+            $("#collapseAll").click(function(e) {
+                e.preventDefault();
+                $("#mysidebar").navgoco('toggle', false);
+            });
+
+            $("#expandAll").click(function(e) {
+                e.preventDefault();
+                $("#mysidebar").navgoco('toggle', true);
+            });
+
+        });
+
+    </script>
+    <script>
+        $(function () {
+            $('[data-toggle="tooltip"]').tooltip()
+        })
+    </script>
+    
+
+</head>
+<body>
+<!-- asciinema player -->
+<script src="assets/js/asciinema-player.js"></script>
+
+<!-- Show or hide players on button clicks-->
+<script>
+$( document ).ready(function() {
+    $(".asciinema-button").click(function(){
+        var asciinemaVideo = "#asciinema-" + $(this).attr('id');
+
+        if ($(asciinemaVideo).hasClass('hidden')){
+            $(asciinemaVideo).removeClass('hidden');
+            $(this).text('Hide Tutorial')
+        } else {
+            $(asciinemaVideo).addClass('hidden');
+            $(this).text('Show Tutorial')
+        }
+        
+    });
+});
+</script>
+
+<!-- Navigation -->
+<nav class="navbar navbar-inverse navbar-fixed-top">
+    <div class="container topnavlinks">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="index.html">&nbsp;<span class="projectTitle"> Singularity</span></a>
+        </div>
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+            <ul class="nav navbar-nav navbar-right">
+                <!-- entries without drop-downs appear here -->
+                
+                
+                
+                <li><a href="blog">News</a></li>
+                
+                
+                
+                <!-- entries with drop-downs appear here -->
+                <!-- conditional logic to control which topnav appears for the audience defined in the configuration file.-->
+                
+                
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">Docs<b class="caret"></b></a>
+                    <ul class="dropdown-menu">
+                        
+                        
+                        <li><a href="admin-guide">Admin Guide</a></li>
+                        
+                        
+                        
+                        <li><a href="user-guide">User Guide</a></li>
+                        
+                        
+                        
+                        <li><a href="links">Contributed Content</a></li>
+                        
+                        
+                    </ul>
+                </li>
+                
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">Quick Links<b class="caret"></b></a>
+                    <ul class="dropdown-menu">
+                        
+                        
+                        <li><a href="https://github.com/singularityware/singularity" target="_blank">Github Repo</a></li>
+                        
+                        
+                        
+                        <li><a href="https://groups.google.com/a/lbl.gov/forum/#!forum/singularity" target="_blank">Google Group</a></li>
+                        
+                        
+                        
+                        <li><a href="http://stackoverflow.com/questions/tagged/singularity" target="_blank">Singularity on Stack Overflow</a></li>
+                        
+                        
+                        
+                        <li><a href="https://singularity-hub.org/faq" target="_blank">Singularity Hub</a></li>
+                        
+                        
+                        
+                        <li><a href="https://singularity-container.slack.com" target="_blank">Slack</a></li>
+                        
+                        
+                        
+                        <li><a href="faq#troubleshooting">Troubleshooting</a></li>
+                        
+                        
+                    </ul>
+                </li>
+                
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">People<b class="caret"></b></a>
+                    <ul class="dropdown-menu">
+                        
+                        
+                        <li><a href="http://www.lbl.gov/" target="_blank">LBNL</a></li>
+                        
+                        
+                        
+                        <li><a href="https://srcc.stanford.edu/" target="_blank">Stanford</a></li>
+                        
+                        
+                    </ul>
+                </li>
+                
+                
+                
+                <li><a href="/search"><i class="fa fa-search"></i></li>
+                <!-- jekyll search hidden in favor of google
+                <li>
+                    <div id="search-demo-container">
+                        <input type="text" id="search-input" placeholder="search...">
+                        <ul id="results-container"></ul>
+                    </div>
+                    <script src="assets/js/jekyll-search.js" type="text/javascript"></script>
+                    <script type="text/javascript">
+                            SimpleJekyllSearch.init({
+                                searchInput: document.getElementById('search-input'),
+                                resultsContainer: document.getElementById('results-container'),
+                                dataSource: 'search.json',
+                                searchResultTemplate: '<li><a href="{url}" title="The Bootstrap Definition">{title}</a></li>',
+                    noResultsText: 'No results found.',
+                            limit: 10,
+                            fuzzy: true,
+                    })
+                    </script>
+                    end search-->
+                </li>
+            </ul>
+        </div>
+        </div>
+        <!-- /.container -->
+</nav>
+
+<!-- Page Content -->
+<div class="container">
+    <div class="col-lg-12">&nbsp;</div>
+    <!-- Content Row -->
+    <div class="row">
+        <!-- Sidebar Column -->
+        <div class="col-md-3">
+          
+
+
+
+
+
+
+
+<div class="shiny"><a href="\"><figure><img src="/images/logo/logo.svg" class="sidebar-logo"/></figure></a></div>
+
+
+<ul id="mysidebar" class="nav">
+    <li class="sidebarTitle">User Guide</li>
+    
+    
+    
+    <li>
+        <a href="#">Getting Started</a>
+        <ul>
+            
+            
+            
+            <li><a href="user-guide">Introduction</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-quick-start-installation">Quick Start Installation</a></li>
+            
+            
+            
+            
+            
+            
+            <li class="active"><a href="bootstrap-image">Bootstrap an Image</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="create-image">Create an Image</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-mount">Bind Paths and Files</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-changing-containers">Change an Existing Container</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-docker">Singularity and Docker</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="faq#troubleshooting">Troubleshooting</a></li>
+            
+            
+            
+            
+        </ul>
+        
+        
+    
+    <li>
+        <a href="#">Commands</a>
+        <ul>
+            
+            
+            
+            <li><a href="docs-usage">Command Usage</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-bootstrap">bootstrap</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-exec">exec</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-export">export</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-import">import</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-shell">shell</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-run">run</a></li>
+            
+            
+            
+            
+        </ul>
+        
+        
+        
+        <!-- if you aren't using the accordion, uncomment this block:
+           <p class="external">
+               <a href="#" id="collapseAll">Collapse All</a> | <a href="#" id="expandAll">Expand All</a>
+           </p>
+           -->
+    </li>
+</ul>
+</div>
+
+<!-- this highlights the active parent class in the navgoco sidebar. this is critical so that the parent expands when you're viewing a page. This must appear below the sidebar code above. Otherwise, if placed inside customscripts.js, the script runs before the sidebar code runs and the class never gets inserted.-->
+<script>$("li.active").parents('li').toggleClass("active");</script>
+
+    <!-- Content Column -->
+    <div class="col-md-9">
+        <div class="post-header">
+   <h1 class="post-title-main">The Bootstrap Definition</h1>
+</div>
+
+
+
+<div class="post-content">
+
+   
+
+    <!-- Previous and next buttons-->
+    <div class="row" style="padding-top:30px; margin-bottom:10px"><div class="col-md-12">
+        <a href="#"><button style="width:20%; height: 70px; float:left" class="hidden previous-button btn btn-lg btn-default">Previous</button></a>
+        <a href="#"><button style="width:20%; height: 70px; float:right" class="hidden next-button btn btn-lg btn-default">Next</button></a>
+    </div></div>
+
+    <script>
+    $(document).ready(function(){
+
+        var next = $("li.active").next().last().find('a').attr('href');
+        var previous = $("li.active").prev().last().find('a').attr('href');
+
+        // NEXT BUTTON
+        if (typeof next == 'undefined'){
+            console.log("disabling next button")
+            $(".next-button").addClass("hidden")
+        } else if (next == "#") {
+            next = $("li.active").next().find("li").first().find('a').attr('href');
+            $(".next-button").closest('a').attr('href', next)
+            $(".next-button").removeClass('hidden')
+        } else {
+            $(".next-button").closest('a').attr('href', next)
+            $(".next-button").removeClass('hidden')
+        }
+
+        // PREVIOUS BUTTON
+        if (typeof previous == 'undefined'){
+            console.log("disabling previous button")
+            $(".previous-button").addClass("hidden")
+        } else if (previous == "#") {
+            previous = $("li.active").prev().find("li").last().find('a').attr('href')
+            $(".previous-button").closest('a').attr('href', previous)
+            $(".previous-button").removeClass('hidden')
+        } else {
+            $(".previous-button").closest('a').attr('href', previous)
+            $(".previous-button").removeClass('hidden')
+        }
+
+    })
+    </script>
+
+    
+
+  
+<!-- this handles the automatic toc. use ## for subheads to auto-generate the on-page minitoc. if you use html tags, you must supply an ID for the heading element in order for it to appear in the minitoc. -->
+<script>
+$( document ).ready(function() {
+  // Handler for .ready() called.
+
+$('#toc').toc({ minimumHeaders: 0, listType: 'ul', showSpeed: 0, headers: 'h2,h3,h4' });
+
+/* this offset helps account for the space taken up by the floating toolbar. */
+$('#toc').on('click', 'a', function() {
+  var target = $(this.getAttribute('href'))
+    , scroll_target = target.offset().top
+
+  $(window).scrollTop(scroll_target - 10);
+  return false
+})
+  
+});
+</script>
+
+<div id="toc"></div>
+
+<p>The process of <em>bootstrapping</em> a Singularity container is equivalent to describing a recipe for the container creation. There are several recipe formats that Singularity supports, but only the primary format of version 2.2 will be documented here.</p>
+
+<h2 id="best-practices-for-bootstrapping">Best Practices for Bootstrapping</h2>
+<p>When bootstrapping a container, it is best to consider the following:</p>
+
+<ol>
+  <li>Install packages, programs, data, and files into operating system locations (e.g. not <code class="highlighter-rouge">/home</code>, <code class="highlighter-rouge">/tmp</code>, or any other directories that might get commonly binded on).</li>
+  <li>If you require any special environment variables to be defined, add them the <code class="highlighter-rouge">/environment</code> file inside the container.</li>
+  <li>Files should never be owned by actual users, they should always be owned by a system account (UID &lt; 500).</li>
+  <li>Ensure that the container’s <code class="highlighter-rouge">/etc/passwd</code>, <code class="highlighter-rouge">/etc/group</code>, <code class="highlighter-rouge">/etc/shadow</code>, and no other sensitive files have anything but the bare essentials within them.</li>
+  <li>Do all of your bootstrapping via a definition file instead of manipulating the containers by hand (with the <code class="highlighter-rouge">--writable</code> options), this ensures greatest possibility of reproducibility and mitigates the <em>black box effect</em>.</li>
+</ol>
+
+<h2 id="the-bootstrap-definition-file">The Bootstrap Definition File</h2>
+<p>There are multiple sections of the Singularity bootstrap definition file:</p>
+
+<ol>
+  <li><strong>Header</strong>: The Header describes the core operating system to bootstrap within the container. Here you will configure the base operating system features that you need within your container. Examples of this include, what distribution of Linux, what version, what packages must be part of a core install.</li>
+  <li><strong>Sections</strong>: The reset of the definition is comprised of sections or blobs of data. Each section is defined by a <code class="highlighter-rouge">%</code> character followed by the name of the particular section. All sections are optional.</li>
+</ol>
+
+<h3 id="the-header-fields">The header fields:</h3>
+
+<h4 id="bootstrap">Bootstrap:</h4>
+<p>The <code class="highlighter-rouge">Bootstrap: </code> keyword identifies the Singularity module that will be used for building the core components of the operating system. There are several supported modules at the time of this writing:</p>
+
+<h5 id="yum"><strong>yum</strong></h5>
+
+<p>The YUM bootstrap module uses YUM on the host system to bootstrap the core operating system that exists within the container. This module is applicable for bootstrapping distributions like Red Hat, Centos, and Scientific Linux. When using the <code class="highlighter-rouge">yum</code> bootstrap module, several other keywords may also be necessary to define:</p>
+
+<ul>
+  <li><strong>MirrorURL</strong>: This is the location where the packages will be downloaded from. When bootstrapping different RHEL/YUM compatible distributions of Linux, this will define which variant will be used (e.g. the only difference in bootstrapping Centos from Scientific Linux is this line.</li>
+  <li><strong>OSVersion</strong>: When using the <code class="highlighter-rouge">yum</code> bootstrap module, this keyword is conditional and required only if you have specified a %{OSVERSION} variable name in the <code class="highlighter-rouge">MirrorURL</code> keyword. If the <code class="highlighter-rouge">MirrorURL</code> definition does not have the %{OSVERSION} variable, <code class="highlighter-rouge">OSVersion</code> can be omitted from the header field.</li>
+  <li><strong>Include</strong>: By default the core operating system is an extremely minimal base, which may or may not include the means to even install additional packages. The <code class="highlighter-rouge">Include</code> keyword should define any additional packages which should be used and installed as part of the core operating system bootstrap. The best practice is to keep this keyword usage as minimal as possible such that you can then use the <code class="highlighter-rouge">%inside</code> scriptlet (explained shortly) to do additional installations. One common package you may want to include here is <code class="highlighter-rouge">yum</code> itself.</li>
+</ul>
+
+<p>Warning, there is a major limitation with using YUM to bootstrap a container and that is the RPM database that exists within the container will be created using the RPM library and Berkeley DB implementation that exists on the host system. If the RPM implementation inside the container is not compatible with the RPM database that was used to create the container, once the container has been created RPM and YUM commands inside the container may fail. This issue can be easily demonstrated by bootstrapping an older RHEL compatible image by a newer one (e.g. bootstrap a Centos 5 or 6 container from a Centos 7 host).</p>
+
+<h5 id="debootstrap"><strong>debootstrap</strong></h5>
+<p>The Debian bootstrap module is a tool which is used specifically for bootstrapping distributions which utilize the <code class="highlighter-rouge">.deb</code> package format and <code class="highlighter-rouge">apt-get</code> repositories. This module will bootstrap any of the Debian and Ubuntu based distributions. When using the <code class="highlighter-rouge">debootstrap</code> module, the following keywords must also be defined:</p>
+
+<ul>
+  <li><strong>MirrorURL</strong>: This is the location where the packages will be downloaded from. When bootstrapping different Debian based distributions of Linux, this will define which varient will be used (e.g. specifying a different URL can be the difference between Debian or Ubuntu).</li>
+  <li><strong>OSVersion</strong>: This keyword must be defined as the alpha-character string associated with the version of the distribution you wish to use. For example, <code class="highlighter-rouge">trusty</code> or <code class="highlighter-rouge">stable</code>.</li>
+  <li><strong>Include</strong>: As with the <code class="highlighter-rouge">yum</code> module, the <code class="highlighter-rouge">Include</code> keyword will install additional packages into the core operating system and the best practice is to supply only the bare essentials such that the <code class="highlighter-rouge">%inside</code> scriptlet has what it needs to properly completely the bootstrap.</li>
+</ul>
+
+<h5 id="arch"><strong>arch</strong></h5>
+<p>The Arch Linux bootstrap module does not name any additional keywords at this time. By defining the <code class="highlighter-rouge">arch</code> module, you have essentially given all of the information necessary for that particular bootstrap module to build a core operating system.</p>
+
+<h5 id="docker"><strong>docker</strong></h5>
+<p>The Docker bootstrap module will create a core operating system image based on an image hosted on a particular Docker Registry server. By default it will use the primary Docker Library, but that can be overridden. When using the <code class="highlighter-rouge">docker</code> module, several other keywords may also be defined:</p>
+
+<ul>
+  <li><strong>From</strong>: This keyword defines the string of the registry name used for this image in the format [name]:[version]. Several examples are: <code class="highlighter-rouge">ubuntu:latest</code>, <code class="highlighter-rouge">centos:6</code>, <code class="highlighter-rouge">alpine:latest</code>, or <code class="highlighter-rouge">debian</code> (if the version tag is ommitted, <code class="highlighter-rouge">:latest</code> is automatically used).</li>
+  <li><strong>IncludeCmd</strong>: This keyword tells Singularity to utilize the Docker defined <code class="highlighter-rouge">Cmd</code> as the <code class="highlighter-rouge">%runscript</code> (defined below), if the <code class="highlighter-rouge">Cmd</code> is defined.</li>
+  <li><strong>Registry</strong>: If the registry you wish to download the image from is not from the main Docker Library, you can define it here.</li>
+  <li><strong>Token</strong>: Sometimes the Docker API (depending on version?) requires an authorization token which is generated on the fly. Toggle this with a <code class="highlighter-rouge">yes</code> or <code class="highlighter-rouge">no</code> here.</li>
+</ul>
+
+<h3 id="bootstrap-sections">Bootstrap sections:</h3>
+<p>Once the <code class="highlighter-rouge">Bootstrap</code> module has completed, the sections are identified and utilized if present. The following sections are supported in the bootstrap definition, and integrated during the bootstrap process in the following order:</p>
+
+<h4 id="setup">%setup</h4>
+<p>This section blob is a Bourne shell scriptlet which will be executed on the host outside the container during bootstrap. The path to the container is accessible from within the running scriptlet environment via the variable <code class="highlighter-rouge">$SINGULARITY_ROOTFS</code>. For example, consider the following scriptlet:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>%setup
+    echo "Looking in directory '$SINGULARITY_ROOTFS' for /bin/sh"
+    if [ ! -x "$SINGULARITY_ROOTFS/bin/sh" ]; then
+        echo "Hrmm, this container does not have /bin/sh installed..."
+        exit 1
+    fi
+    exit 0
+</code></pre>
+</div>
+
+<p>As we investigate this example scriptlet, you will first see this is the <code class="highlighter-rouge">%outside</code> scriptlet as would be defined within our bootstrap. The following line simply echos a message and prints the variable <code class="highlighter-rouge">$SINGULARITY_ROOTFS</code> which is defined within the shell context that this scriptlet runs in. Then we check to see if <code class="highlighter-rouge">/bin/sh</code> is executable, and if it is not, we print an error message. Notice the <code class="highlighter-rouge">exit 1</code>. The exit value of the scriptlets communicates if the scriptlet ran successfully or not. As with any shell return value, an exit of 0 (zero) means success, and any other exit value is a failure.</p>
+
+<p><em>note: Any uncaught command errors that occur within the scriptlet will cause the entire build process to halt!</em></p>
+
+<h4 id="post">%post</h4>
+<p>Similar to the <code class="highlighter-rouge">%setup</code> section, this section will be executed once during bootstrapping, but this scriptlet will be run from inside the container. This is where you should put additional installation commands, downloads, and configuration into your containers. Here is an example to consider:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>%post
+	echo "Installing Development Tools YUM group"
+	yum -y groupinstall "Development Tools"
+	echo "Installing OpenMPI into container..."
+	mkdir /tmp/git
+	cd /tmp/git
+	git clone https://github.com/open-mpi/ompi.git
+	cd ompi
+	./autogen.pl
+	./configure --prefix=/usr/local
+	make
+	make install
+	/usr/local/bin/mpicc examples/ring_c.c -o /usr/bin/mpi_ring
+	cd /
+	rm -rf /tmp/git
+	exit 0
+</code></pre>
+</div>
+
+<p>The above example runs inside the container, so in this case we will first install the Centos YUM group development tools into the container, and then download Open MPI from the master branch from GitHub. We then build Open MPI and install it within the container. Next we compile one of the MPI test examples <code class="highlighter-rouge">ring_c.c</code> and install that to <code class="highlighter-rouge">/usr/bin/mpi_ring</code>. Finally we clean up and exit success.</p>
+
+<p><em>note: As with the <code class="highlighter-rouge">%setup</code> scriptlet, if any errors are encountered the entire process will fail.</em></p>
+
+<p><em>another note: This is not a good example of a reproducible definition because it is pulling Open MPI from a moving target. A better example, would be to pull a static released version, but this serves as a good example of building a <code class="highlighter-rouge">%post</code> scriptlet.</em></p>
+
+<h4 id="runscript">%runscript</h4>
+<p>The <code class="highlighter-rouge">%runscript</code> is another scriptlet, but it does not get executed during bootstrapping. Instead it gets persisted within the container to a file called <code class="highlighter-rouge">/singularity</code> which is the execution driver when the container image is <strong><em>run</em></strong> (either via the <code class="highlighter-rouge">singularity run</code> command or via executing the container directly).</p>
+
+<p>When the <code class="highlighter-rouge">%runscript</code> is executed, all options are passed along to the executing script at runtime, this means that you can (and should) manage argument processing from within your runscript. Here is an example of how to do that:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>%runscript
+	echo "Arguments received: $*"
+	exec /usr/bin/python "$@"
+</code></pre>
+</div>
+
+<p>In this particular runscript, the arguments are printed as a single string (<code class="highlighter-rouge">$*</code>) and then they are passed to <code class="highlighter-rouge">/usr/bin/python</code> via a quoted array (<code class="highlighter-rouge">$@</code>) which ensures that all of the arguments are properly parsed by the executed command. The <code class="highlighter-rouge">exec</code> command causes the given command to replace the current entry in the process table with the one that is to be called. This makes it so the runscript shell process ceases to exist, and the only process running inside this container is the called Python command.</p>
+
+<h4 id="test">%test</h4>
+<p>You may choose to add a <code class="highlighter-rouge">%test</code> section to your definition file. This section will be run at the very end of the boostrapping process and will give you a chance to validate the container during the bootstrap process. You can also execute this scriptlet through the container itself, such that you can always test the validity of the container itself as you transport it to different hosts. Extending on the above Open MPI <code class="highlighter-rouge">%post</code>, consider this example:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>%test
+	/usr/local/bin/mpirun --allow-run-as-root /usr/bin/mpi_test
+
+</code></pre>
+</div>
+
+<p>This is a simple Open MPI test to ensure that the MPI is build properly and communicates between processes as it should.</p>
+
+<p>For further examples, we recommend you take a closer look at the <a href="/docs-bootstrap">bootstrap command</a></p>
+
+
+    <!-- More navigation on the bottom -->
+    <div class="row" style="padding-top:30px; margin-bottom:10px"><div class="col-md-12">
+        <a href="#"><button style="width:20%; height: 70px; float:left" class="hidden previous-button btn btn-lg btn-default">Previous</button></a>
+        <a href="#"><button style="width:20%; height: 70px; float:right" class="hidden next-button btn btn-lg btn-default">Next</button></a>
+    </div></div>
+
+
+    
+
+    
+
+    <a style="margin-top:10px;margin-bottom:10px" target="_blank" href="https://github.com/singularityware/singularityware.github.io/blob/master/pages/_pages/docs/bootstrap-image.md" class="btn btn-default btn-xs githubEditButton" role="button"><i class="fa fa-github fa-lg"></i> Edit me</a>
+    
+
+    
+
+    <div class="tags">
+        
+    </div>
+
+    
+
+</div>
+
+<hr class="shaded"/>
+
+<footer>
+            <div class="row">
+
+               <!-- Social Media links, etc -->
+               <div class="col-lg-6 footer">
+               
+    <a class="no-after social-icon" href="https://twitter.com/SingularityApp">
+      <i class="fa fa-4x fa-twitter no-after"></i>
+    </a>
+
+
+    <a class="no-after social-icon" href="https://github.com/singularityware">
+      <i class="fa fa-4x fa-github no-after"></i>
+    </a>
+
+
+
+               </div>
+
+                <div class="col-lg-6 footer">
+<p><img src="images/logo/logo.png" alt="Company logo" style="width:40px;padding-bottom:10px"/></p>
+ Site last generated: Jul 26, 2017 <br />
+                </div>
+            </div>
+</footer>
+
+
+    </div>
+    <!-- /.row -->
+</div>
+<!-- /.container -->
+    </div>
+
+</body>
+
+<!-- the google_analytics_id gets auto inserted from the config file -->
+
+
+
+<script>(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)})(window,document,'script','//www.google-analytics.com/analytics.js','ga');ga('create','UA-84672381-1','auto');ga('require','displayfeatures');ga('send','pageview');</script>
+
+
+</html>

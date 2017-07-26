@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<meta name="description" content="   About Singularity                   Previous        Next              OverviewDesigned around the notion of extreme mobility of compute and reproducible science, Singularity enables users to have full control of their operating system environment. This means that a non-privileged user can “swap out” the operating system on the host for one they control. So if the host system is running RHEL6 but your application runs in Ubuntu, you can create an Ubuntu image, install your applications into that image, copy the image to another host, and run your application on that host in it’s native Ubuntu environment!Singularity also allows you to leverage the resources of whatever host you are on. This includes HPC interconnects, resource managers, file systems, GPUs and/or accelerators, etc.BackgroundSoftware development on Linux is moving in a new direction. Thanks to advances in virtualization and container technologies, developers are finding it very convenient to distribute instances of their entire build/development environment in addition to or instead of source code alone. There are some benefits and drawbacks to this model.Some of the benefits of distributing software in this fashion include being able to provide a configuration free implementation which can easily be replicated to distribute a software or work flow. The user does not need to worry about managing potentially complicated dependency chains nor worry about configuration nuances.The drawbacks are numerous, but tend to focus on several major areas: container overhead, container technology and architecture concerns (e.g., privilege escalation and network/file system access), and work flow compatibility.The Singularity SolutionSingularity containers are purpose built and can include a simple binary and library stack or a complicated work flow that includes both network and file system access (or anything in between). The Singularity container images are then completely portable to any binary compatible version of Linux with the only dependency being Singularity running on the target system.Singularity blocks privilege escalation within the container so if you want to be root inside the container, you first must be root outside the container. This usage paradigm mitigates many of the security concerns that exists with containers on multi-tenant shared resources. You can directly call programs inside the container from outside the container fully incorporating pipes, standard IO, file system access, X11, and MPI makes it easy to incorporate into your environment.PortabilitySingularity containers are designed to be as portable as possible, spanning many flavors and vintages of Linux. The only known i86 limitation is the version of Linux running on the host. Singularity has been ported to distributions going as far back as RHEL 5 (and compatibles) and works on all flavors of Debian, Gentoo and Slackware. Within the container, there are almost no limitations aside from basic binary compatibility.Within the container, there could be an entire distribution of Linux or a very lightweight tuned set of packages to support a particular work-flow. The work-flow can be scripted to run completely within the container or interact with files and other programs outside the container. The container can also emulate a single program and can be executed directly (yes, you heard that right). Containers have the execute bit set such they can be executed and configured to run a defined script or program when executed in this manner.ReproducibilityEach Singularity image includes all of the application’s necessary run-time libraries and can even include the required data and files for a particular application to run. This encapsulation of the entire user-space environment facilitates not only portability but also reproducibility.LicenseSingularity is released under a BSD license with 2 modifications. One of the modifications being that you may not use the names of any project members or contributors (namely UC or the US Department of Energy) to endorse or promote products or services derived from or using this software. And the other is that if you share modified code publicly (or with Berkeley National Laboratory), you will grant similar license terms on your “Enhancements” (see LICENSE file for more details).FeaturesEncapsulation of the environmentMobility of Compute is the encapsulation of an environment in such a manner to make it portable between systems. This operating system environment can contain the necessary applications for a particular work-flow, development tools, and/or raw data. Once this environment has been developed it can be easily copied and run from any other Linux system.This allows users to BYOE (Bring Their Own Environment) and work within that environment anywhere that Singularity is installed. From a service provider’s perspective we can easily allow users the flexibility of “cloud”-like environments enabling custom requirements and workflows.Additionally there is always a misalignment between development and production environments. The service provider can only offer a stable, secure tuned production environment which in many times will not keep up with the fast paced requirements of developers. With Singularity, you can control your own development environment and simply copy them to the production resources.Containers are image basedUsing images have several key benefits:First, this image serves as a vector for mobility while retaining permissions of the files within the image. For example, a user may own the image file so they can copy the image to and from system to system. But, files within an image must be owned by the appropriate user. For example, ‘/etc/passwd’ and ‘/’ must be owned by root to achieve appropriate access permission. These permissions are maintained within a user owned image.There is never a need to build, rebuild, or cache an image! All IO happens on an as needed basis. The overhead in starting a container is in the thousandanths of a second because there is never a need to pull, build or cache anything!On HPC systems a single image file optimizes the benefits of a shared parallel file system! There is a single metadata lookup for the image itself, and the subsequent IO is all directed to the storage servers themselves. Compare this to the massive amount of metadata IO that would be required if the container’s root file system was in a directory structure. It is not uncommon for large Python jobs to DDOS (distributed denial of service) a parallel meta-data server for minutes! The Singularity image mitigates this considerably.No user contextual changes or root escalation allowedWhen Singularity is executed, the calling user is maintained within the container. For example, if user ‘gmk’ starts a Singularity container, the same user ‘gmk’ will end up within the container. If ‘root’ starts the container, ‘root’ will be the user inside the container.Singularity also limits a user’s ability to escalate privileges within the container. Even if the user works in their own environment where they configured ‘sudo’ or even removed root’s password, they will not be able to ‘sudo’ or ‘su’ to root. If you want to be root inside the container, you must first be root outside the container.Because of this model, it becomes possible to blur the line of access between what is contained and what is on the host as Singularity does not grant the user any more access then they already have. It also enables the implementation on shared/multi-tenant resources.No root owned daemon processesSingularity does not utilize a daemon process to manage the containers. While daemon processes do facilitate certain types of workflows and privilege escalation, it breaks all resource controlled environments. This is because a user’s job becomes a subprocess of the daemon (rather then the user’s shell) and the daemon process is outside of the reach of a resource manager or batch scheduler.Additionally, securing a root owned daemon process which is designed to manipulate the host’s environment becomes tricky. In currently implemented models, it is possible to grant permissions to users to control the daemon, or not. There is no sense of ACL’s or access of what users can and can not do.While there are some other container implementations that do not leverage a daemon, they lack other features necessary to be considered as reasonable user facing solution without having root access. For example, there has been a standing unimplemented patch to RunC (already daemon-less) which allows for root-less usage (no root). But, user contexts are not maintained, and it will only work with chroot directories (instead of an image) where files must be owned and manipulated by the root user!Use CasesBYOE: Bring Your Own Environment!Engineering work-flows for research computing can be a complicated and iterative process, and even more so on a shared and somewhat inflexible production environment. Singularity solves this problem by making the environment flexible.Additionally, it is common (especially in education) for schools to provide a standardized pre-configured Linux distribution to the students which includes all of the necessary tools, programs, and configurations so they can immediately follow along.Reproducible scienceSingularity containers can be built to include all of the programs, libraries, data and scripts such that an entire demonstration can be contained and either archived or distributed for others to replicate no matter what version of Linux they are presently running.Commercially supported code requiring a particular environmentSome commercial applications are only certified to run on particular versions of Linux. If that application was installed into a Singularity container running the version of Linux that it is certified for, that container could run on any Linux host. The application environment, libraries, and certified stack would all continue to run exactly as it is intended.Additionally, Singularity blurs the line between container and host such that your home directory (and other directories) exist within the container. Applications within the container have full and direct access to all files you own thus you can easily incorporate the contained commercial application into your work and process flow on the host.Static environments (software appliances)Fund once, update never software development model. While this is not ideal, it is a common scenario for research funding. A certain amount of money is granted for initial development, and once that has been done the interns, grad students, post-docs, or developers are reassigned to other projects. This leaves the software stack un-maintained, and even rebuilds for updated compilers or Linux distributions can not be done without unfunded effort.Legacy code on old operating systemsSimilar to the above example, while this is less than ideal it is a fact of the research ecosystem. As an example, I know of one Linux distribution which has been end of life for 15 years which is still in production due to the software stack which is custom built for this environment. Singularity has no problem running that operating system and application stack on a current operating system and hardware.Complicated software stacks that are very host specificThere are various software packages which are so complicated that it takes much effort in order to port, update and qualify to new operating systems or compilers. The atmospheric and weather applications are a good example of this. Porting them to a contained operating system will prolong the use-fullness of the development effort considerably.Complicated work-flows that require custom installation and/or dataConsolidating a work-flow into a Singularity container simplifies distribution and replication of scientific results. Making containers available along with published work enables other scientists to build upon (and verify) previous scientific work.Getting startedJump in and get started, or find ways to get help.  Project lead: Gregory M. Kurtzer  Sponsored by: HPC @ LBNL                Previous        Next                 Edit me                                                                                                                                                 Site last generated: Jul 26, 2017                             ">
+
+
+<meta name="name" content="About Singularity">
+
+<meta name="thumbnail" content="http://singularity.lbl.gov/images/logo/logo.svg">
+
+
+
+
+<title>About Singularity | Singularity</title>
+<link rel="stylesheet" href="assets/css/syntax.css">
+
+
+<link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+<!--<link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">-->
+<link rel="stylesheet" href="assets/css/modern-business.css">
+<link rel="stylesheet" href="assets/css/lavish-bootstrap.css">
+<link rel="stylesheet" href="assets/css/customstyles.css">
+<link rel="stylesheet" href="assets/css/theme-blue.css">
+
+<link rel="stylesheet" type="text/css" href="assets/css/asciinema-player.css" />
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.min.js"></script>
+<script src="assets/js/jquery.navgoco.min.js"></script>
+
+
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/anchor-js/2.0.0/anchor.min.js"></script>
+<script src="assets/js/toc.js"></script>
+<script src="assets/js/customscripts.js"></script>
+
+<link rel="shortcut icon" href="images/favicon/favicon.ico">
+
+<!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+<!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+<!--[if lt IE 9]>
+<script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+<script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+<![endif]-->
+
+<link rel="alternate" type="application/rss+xml" title="" href="http://localhost:4005feed.xml">
+
+    <script>
+        $(document).ready(function() {
+
+            // Initialize navgoco with default options
+            $("#mysidebar").navgoco({
+                caretHtml: '',
+                accordion: true,
+                openClass: 'active', // open
+                save: false, // leave false or nav highlighting doesn't work right
+                cookie: {
+                    name: 'navgoco',
+                    expires: false,
+                    path: '/'
+                },
+                slide: {
+                    duration: 400,
+                    easing: 'swing'
+                }
+            });
+
+            $("#collapseAll").click(function(e) {
+                e.preventDefault();
+                $("#mysidebar").navgoco('toggle', false);
+            });
+
+            $("#expandAll").click(function(e) {
+                e.preventDefault();
+                $("#mysidebar").navgoco('toggle', true);
+            });
+
+        });
+
+    </script>
+    <script>
+        $(function () {
+            $('[data-toggle="tooltip"]').tooltip()
+        })
+    </script>
+    
+
+</head>
+<body>
+<!-- asciinema player -->
+<script src="assets/js/asciinema-player.js"></script>
+
+<!-- Show or hide players on button clicks-->
+<script>
+$( document ).ready(function() {
+    $(".asciinema-button").click(function(){
+        var asciinemaVideo = "#asciinema-" + $(this).attr('id');
+
+        if ($(asciinemaVideo).hasClass('hidden')){
+            $(asciinemaVideo).removeClass('hidden');
+            $(this).text('Hide Tutorial')
+        } else {
+            $(asciinemaVideo).addClass('hidden');
+            $(this).text('Show Tutorial')
+        }
+        
+    });
+});
+</script>
+
+<!-- Navigation -->
+<nav class="navbar navbar-inverse navbar-fixed-top">
+    <div class="container topnavlinks">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="index.html">&nbsp;<span class="projectTitle"> Singularity</span></a>
+        </div>
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+            <ul class="nav navbar-nav navbar-right">
+                <!-- entries without drop-downs appear here -->
+                
+                
+                
+                <li><a href="blog">News</a></li>
+                
+                
+                
+                <!-- entries with drop-downs appear here -->
+                <!-- conditional logic to control which topnav appears for the audience defined in the configuration file.-->
+                
+                
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">Docs<b class="caret"></b></a>
+                    <ul class="dropdown-menu">
+                        
+                        
+                        <li><a href="admin-guide">Admin Guide</a></li>
+                        
+                        
+                        
+                        <li><a href="user-guide">User Guide</a></li>
+                        
+                        
+                        
+                        <li><a href="links">Contributed Content</a></li>
+                        
+                        
+                    </ul>
+                </li>
+                
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">Quick Links<b class="caret"></b></a>
+                    <ul class="dropdown-menu">
+                        
+                        
+                        <li><a href="https://github.com/singularityware/singularity" target="_blank">Github Repo</a></li>
+                        
+                        
+                        
+                        <li><a href="https://groups.google.com/a/lbl.gov/forum/#!forum/singularity" target="_blank">Google Group</a></li>
+                        
+                        
+                        
+                        <li><a href="http://stackoverflow.com/questions/tagged/singularity" target="_blank">Singularity on Stack Overflow</a></li>
+                        
+                        
+                        
+                        <li><a href="https://singularity-hub.org/faq" target="_blank">Singularity Hub</a></li>
+                        
+                        
+                        
+                        <li><a href="https://singularity-container.slack.com" target="_blank">Slack</a></li>
+                        
+                        
+                        
+                        <li><a href="faq#troubleshooting">Troubleshooting</a></li>
+                        
+                        
+                    </ul>
+                </li>
+                
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">People<b class="caret"></b></a>
+                    <ul class="dropdown-menu">
+                        
+                        
+                        <li><a href="http://www.lbl.gov/" target="_blank">LBNL</a></li>
+                        
+                        
+                        
+                        <li><a href="https://srcc.stanford.edu/" target="_blank">Stanford</a></li>
+                        
+                        
+                    </ul>
+                </li>
+                
+                
+                
+                <li><a href="/search"><i class="fa fa-search"></i></li>
+                <!-- jekyll search hidden in favor of google
+                <li>
+                    <div id="search-demo-container">
+                        <input type="text" id="search-input" placeholder="search...">
+                        <ul id="results-container"></ul>
+                    </div>
+                    <script src="assets/js/jekyll-search.js" type="text/javascript"></script>
+                    <script type="text/javascript">
+                            SimpleJekyllSearch.init({
+                                searchInput: document.getElementById('search-input'),
+                                resultsContainer: document.getElementById('results-container'),
+                                dataSource: 'search.json',
+                                searchResultTemplate: '<li><a href="{url}" title="About Singularity">{title}</a></li>',
+                    noResultsText: 'No results found.',
+                            limit: 10,
+                            fuzzy: true,
+                    })
+                    </script>
+                    end search-->
+                </li>
+            </ul>
+        </div>
+        </div>
+        <!-- /.container -->
+</nav>
+
+<!-- Page Content -->
+<div class="container">
+    <div class="col-lg-12">&nbsp;</div>
+    <!-- Content Row -->
+    <div class="row">
+        <!-- Sidebar Column -->
+        <div class="col-md-3">
+          
+
+
+
+
+
+
+
+<div class="shiny"><a href="\"><figure><img src="/images/logo/logo.svg" class="sidebar-logo"/></figure></a></div>
+
+
+<ul id="mysidebar" class="nav">
+    <li class="sidebarTitle">Singularity</li>
+    
+    
+    
+    <li>
+        <a href="#">Information</a>
+        <ul>
+            
+            
+            
+            <li><a href="blog">News</a></li>
+            
+            
+            
+            
+            
+            
+            <li class="active"><a href="about">About Singularity</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="presentations">Presentations</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="citation-registration">Registry: Citations and Installations</a></li>
+            
+            
+            
+            
+        </ul>
+        
+        
+    
+    <li>
+        <a href="#">Download / Installation</a>
+        <ul>
+            
+            
+            
+            <li><a href="all-releases">All Releases</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="install-linux">Install Singularity on Linux</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="install-mac">Install Singularity on Mac</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="install-windows">Install Singularity on Windows</a></li>
+            
+            
+            
+            
+        </ul>
+        
+        
+    
+    <li>
+        <a href="#">Contributing</a>
+        <ul>
+            
+            
+            
+            <li><a href="contributing-support">User Support</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="contributing-code">Code Development</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="contributing-docs">Writing Documentation</a></li>
+            
+            
+            
+            
+        </ul>
+        
+        
+    
+    <li>
+        <a href="#">Getting Help</a>
+        <ul>
+            
+            
+            
+            <li><a href="faq">FAQ</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="support">Support</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="faq#troubleshooting">Troubleshooting</a></li>
+            
+            
+            
+            
+        </ul>
+        
+        
+    
+    <li>
+        <a href="#">Documentation</a>
+        <ul>
+            
+            
+            
+            <li><a href="quickstart">Quick Start</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="tutorials">Recipes and Tutorials</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="links">Contributed Content Links</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="user-guide">User Documentation</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="admin-guide">Admin Documentation</a></li>
+            
+            
+            
+            
+        </ul>
+        
+        
+        
+        <!-- if you aren't using the accordion, uncomment this block:
+           <p class="external">
+               <a href="#" id="collapseAll">Collapse All</a> | <a href="#" id="expandAll">Expand All</a>
+           </p>
+           -->
+    </li>
+</ul>
+</div>
+
+<!-- this highlights the active parent class in the navgoco sidebar. this is critical so that the parent expands when you're viewing a page. This must appear below the sidebar code above. Otherwise, if placed inside customscripts.js, the script runs before the sidebar code runs and the class never gets inserted.-->
+<script>$("li.active").parents('li').toggleClass("active");</script>
+
+    <!-- Content Column -->
+    <div class="col-md-9">
+        <div class="post-header">
+   <h1 class="post-title-main">About Singularity</h1>
+</div>
+
+
+
+<div class="post-content">
+
+   
+
+    <!-- Previous and next buttons-->
+    <div class="row" style="padding-top:30px; margin-bottom:10px"><div class="col-md-12">
+        <a href="#"><button style="width:20%; height: 70px; float:left" class="hidden previous-button btn btn-lg btn-default">Previous</button></a>
+        <a href="#"><button style="width:20%; height: 70px; float:right" class="hidden next-button btn btn-lg btn-default">Next</button></a>
+    </div></div>
+
+    <script>
+    $(document).ready(function(){
+
+        var next = $("li.active").next().last().find('a').attr('href');
+        var previous = $("li.active").prev().last().find('a').attr('href');
+
+        // NEXT BUTTON
+        if (typeof next == 'undefined'){
+            console.log("disabling next button")
+            $(".next-button").addClass("hidden")
+        } else if (next == "#") {
+            next = $("li.active").next().find("li").first().find('a').attr('href');
+            $(".next-button").closest('a').attr('href', next)
+            $(".next-button").removeClass('hidden')
+        } else {
+            $(".next-button").closest('a').attr('href', next)
+            $(".next-button").removeClass('hidden')
+        }
+
+        // PREVIOUS BUTTON
+        if (typeof previous == 'undefined'){
+            console.log("disabling previous button")
+            $(".previous-button").addClass("hidden")
+        } else if (previous == "#") {
+            previous = $("li.active").prev().find("li").last().find('a').attr('href')
+            $(".previous-button").closest('a').attr('href', previous)
+            $(".previous-button").removeClass('hidden')
+        } else {
+            $(".previous-button").closest('a').attr('href', previous)
+            $(".previous-button").removeClass('hidden')
+        }
+
+    })
+    </script>
+
+    
+
+  <h2 id="overview">Overview</h2>
+
+<p>Designed around the notion of extreme mobility of compute and reproducible science, Singularity enables users to have full control of their operating system environment. This means that a non-privileged user can “swap out” the operating system on the host for one they control. So if the host system is running RHEL6 but your application runs in Ubuntu, you can create an Ubuntu image, install your applications into that image, copy the image to another host, and run your application on that host in it’s native Ubuntu environment!</p>
+
+<p>Singularity also allows you to leverage the resources of whatever host you are on. This includes HPC interconnects, resource managers, file systems, GPUs and/or accelerators, etc.</p>
+
+<h2 id="background">Background</h2>
+<p>Software development on Linux is moving in a new direction. Thanks to advances in virtualization and container technologies, developers are finding it very convenient to distribute instances of their entire build/development environment in addition to or instead of source code alone. There are some benefits and drawbacks to this model.</p>
+
+<p>Some of the benefits of distributing software in this fashion include being able to provide a configuration free implementation which can easily be replicated to distribute a software or work flow. The user does not need to worry about managing potentially complicated dependency chains nor worry about configuration nuances.</p>
+
+<p>The drawbacks are numerous, but tend to focus on several major areas: container overhead, container technology and architecture concerns (e.g., privilege escalation and network/file system access), and work flow compatibility.</p>
+
+<h3 id="the-singularity-solution">The Singularity Solution</h3>
+<p>Singularity containers are purpose built and can include a simple binary and library stack or a complicated work flow that includes both network and file system access (or anything in between). The Singularity container images are then completely portable to any binary compatible version of Linux with the only dependency being Singularity running on the target system.</p>
+
+<p>Singularity blocks privilege escalation within the container so if you want to be root inside the container, you first must be root outside the container. This usage paradigm mitigates many of the security concerns that exists with containers on multi-tenant shared resources. You can directly call programs inside the container from outside the container fully incorporating pipes, standard IO, file system access, X11, and MPI makes it easy to incorporate into your environment.</p>
+
+<h3 id="portability">Portability</h3>
+<p>Singularity containers are designed to be as portable as possible, spanning many flavors and vintages of Linux. The only known i86 limitation is the version of Linux running on the host. Singularity has been ported to distributions going as far back as RHEL 5 (and compatibles) and works on all flavors of Debian, Gentoo and Slackware. Within the container, there are almost no limitations aside from basic binary compatibility.</p>
+
+<p>Within the container, there could be an entire distribution of Linux or a very lightweight tuned set of packages to support a particular work-flow. The work-flow can be scripted to run completely within the container or interact with files and other programs outside the container. The container can also emulate a single program and can be executed directly (yes, you heard that right). Containers have the execute bit set such they can be executed and configured to run a defined script or program when executed in this manner.</p>
+
+<h3 id="reproducibility">Reproducibility</h3>
+<p>Each Singularity image includes all of the application’s necessary run-time libraries and can even include the required data and files for a particular application to run. This encapsulation of the entire user-space environment facilitates not only portability but also reproducibility.</p>
+
+<h3 id="license">License</h3>
+<p>Singularity is released under a BSD license with 2 modifications. One of the modifications being that you may not use the names of any project members or contributors (namely UC or the US Department of Energy) to endorse or promote products or services derived from or using this software. And the other is that if you share modified code publicly (or with Berkeley National Laboratory), you will grant similar license terms on your “Enhancements” (see <a href="https://github.com/singularityware/singularity/blob/master/LICENSE" target="_blank">LICENSE</a> file for more details).</p>
+
+<h2 id="features">Features</h2>
+
+<h3 id="encapsulation-of-the-environment">Encapsulation of the environment</h3>
+
+<p>Mobility of Compute is the encapsulation of an environment in such a manner to make it portable between systems. This operating system environment can contain the necessary applications for a particular work-flow, development tools, and/or raw data. Once this environment has been developed it can be easily copied and run from any other Linux system.</p>
+
+<p>This allows users to BYOE (Bring Their Own Environment) and work within that environment anywhere that Singularity is installed. From a service provider’s perspective we can easily allow users the flexibility of “cloud”-like environments enabling custom requirements and workflows.</p>
+
+<p>Additionally there is always a misalignment between development and production environments. The service provider can only offer a stable, secure tuned production environment which in many times will not keep up with the fast paced requirements of developers. With Singularity, you can control your own development environment and simply copy them to the production resources.</p>
+
+<h3 id="containers-are-image-based">Containers are image based</h3>
+
+<p>Using images have several key benefits:</p>
+
+<p>First, this image serves as a vector for mobility while retaining permissions of the files within the image. For example, a user may own the image file so they can copy the image to and from system to system. But, files within an image must be owned by the appropriate user. For example, ‘/etc/passwd’ and ‘/’ must be owned by root to achieve appropriate access permission. These permissions are maintained within a user owned image.</p>
+
+<p>There is never a need to build, rebuild, or cache an image! All IO happens on an as needed basis. The overhead in starting a container is in the thousandanths of a second because there is never a need to pull, build or cache anything!</p>
+
+<p>On HPC systems a single image file optimizes the benefits of a shared parallel file system! There is a single metadata lookup for the image itself, and the subsequent IO is all directed to the storage servers themselves. Compare this to the massive amount of metadata IO that would be required if the container’s root file system was in a directory structure. It is not uncommon for large Python jobs to DDOS (distributed denial of service) a parallel meta-data server for minutes! The Singularity image mitigates this considerably.</p>
+
+<h3 id="no-user-contextual-changes-or-root-escalation-allowed">No user contextual changes or root escalation allowed</h3>
+
+<p>When Singularity is executed, the calling user is maintained within the container. For example, if user ‘gmk’ starts a Singularity container, the same user ‘gmk’ will end up within the container. If ‘root’ starts the container, ‘root’ will be the user inside the container.</p>
+
+<p>Singularity also limits a user’s ability to escalate privileges within the container. Even if the user works in their own environment where they configured ‘sudo’ or even removed root’s password, they will not be able to ‘sudo’ or ‘su’ to root. If you want to be root inside the container, you must first be root outside the container.</p>
+
+<p>Because of this model, it becomes possible to blur the line of access between what is contained and what is on the host as Singularity does not grant the user any more access then they already have. It also enables the implementation on shared/multi-tenant resources.</p>
+
+<h3 id="no-root-owned-daemon-processes">No root owned daemon processes</h3>
+
+<p>Singularity does not utilize a daemon process to manage the containers. While daemon processes do facilitate certain types of workflows and privilege escalation, it breaks all resource controlled environments. This is because a user’s job becomes a subprocess of the daemon (rather then the user’s shell) and the daemon process is outside of the reach of a resource manager or batch scheduler.</p>
+
+<p>Additionally, securing a root owned daemon process which is designed to manipulate the host’s environment becomes tricky. In currently implemented models, it is possible to grant permissions to users to control the daemon, or not. There is no sense of ACL’s or access of what users can and can not do.</p>
+
+<p>While there are some other container implementations that do not leverage a daemon, they lack other features necessary to be considered as reasonable user facing solution without having root access. For example, there has been a standing unimplemented patch to RunC (already daemon-less) which allows for root-less usage (no root). But, user contexts are not maintained, and it will only work with chroot directories (instead of an image) where files must be owned and manipulated by the root user!</p>
+
+<h2 id="use-cases">Use Cases</h2>
+
+<h3 id="byoe-bring-your-own-environment">BYOE: Bring Your Own Environment!</h3>
+<p>Engineering work-flows for research computing can be a complicated and iterative process, and even more so on a shared and somewhat inflexible production environment. Singularity solves this problem by making the environment flexible.</p>
+
+<p>Additionally, it is common (especially in education) for schools to provide a standardized pre-configured Linux distribution to the students which includes all of the necessary tools, programs, and configurations so they can immediately follow along.</p>
+
+<h3 id="reproducible-science">Reproducible science</h3>
+<p>Singularity containers can be built to include all of the programs, libraries, data and scripts such that an entire demonstration can be contained and either archived or distributed for others to replicate no matter what version of Linux they are presently running.</p>
+
+<p>Commercially supported code requiring a particular environment
+Some commercial applications are only certified to run on particular versions of Linux. If that application was installed into a Singularity container running the version of Linux that it is certified for, that container could run on any Linux host. The application environment, libraries, and certified stack would all continue to run exactly as it is intended.</p>
+
+<p>Additionally, Singularity blurs the line between container and host such that your home directory (and other directories) exist within the container. Applications within the container have full and direct access to all files you own thus you can easily incorporate the contained commercial application into your work and process flow on the host.</p>
+
+<h3 id="static-environments-software-appliances">Static environments (software appliances)</h3>
+<p>Fund once, update never software development model. While this is not ideal, it is a common scenario for research funding. A certain amount of money is granted for initial development, and once that has been done the interns, grad students, post-docs, or developers are reassigned to other projects. This leaves the software stack un-maintained, and even rebuilds for updated compilers or Linux distributions can not be done without unfunded effort.</p>
+
+<h3 id="legacy-code-on-old-operating-systems">Legacy code on old operating systems</h3>
+<p>Similar to the above example, while this is less than ideal it is a fact of the research ecosystem. As an example, I know of one Linux distribution which has been end of life for 15 years which is still in production due to the software stack which is custom built for this environment. Singularity has no problem running that operating system and application stack on a current operating system and hardware.</p>
+
+<h3 id="complicated-software-stacks-that-are-very-host-specific">Complicated software stacks that are very host specific</h3>
+<p>There are various software packages which are so complicated that it takes much effort in order to port, update and qualify to new operating systems or compilers. The atmospheric and weather applications are a good example of this. Porting them to a contained operating system will prolong the use-fullness of the development effort considerably.</p>
+
+<h3 id="complicated-work-flows-that-require-custom-installation-andor-data">Complicated work-flows that require custom installation and/or data</h3>
+<p>Consolidating a work-flow into a Singularity container simplifies distribution and replication of scientific results. Making containers available along with published work enables other scientists to build upon (and verify) previous scientific work.</p>
+
+<h2 id="getting-started">Getting started</h2>
+
+<p>Jump in and <a href="/quickstart"><strong>get started</strong></a>, or find ways to <a href="/support">get help</a>.</p>
+
+<ul>
+  <li>Project lead: <a href="https://gmkurtzer.github.io/" target="_blank">Gregory M. Kurtzer</a></li>
+  <li>Sponsored by: <a href="http://scs.lbl.gov/" target="_blank">HPC @ LBNL</a></li>
+</ul>
+
+
+
+    <!-- More navigation on the bottom -->
+    <div class="row" style="padding-top:30px; margin-bottom:10px"><div class="col-md-12">
+        <a href="#"><button style="width:20%; height: 70px; float:left" class="hidden previous-button btn btn-lg btn-default">Previous</button></a>
+        <a href="#"><button style="width:20%; height: 70px; float:right" class="hidden next-button btn btn-lg btn-default">Next</button></a>
+    </div></div>
+
+
+    
+
+    
+
+    <a style="margin-top:10px;margin-bottom:10px" target="_blank" href="https://github.com/singularityware/singularityware.github.io/blob/master/pages/_pages//about.md" class="btn btn-default btn-xs githubEditButton" role="button"><i class="fa fa-github fa-lg"></i> Edit me</a>
+    
+
+    
+
+    <div class="tags">
+        
+    </div>
+
+    
+
+</div>
+
+<hr class="shaded"/>
+
+<footer>
+            <div class="row">
+
+               <!-- Social Media links, etc -->
+               <div class="col-lg-6 footer">
+               
+    <a class="no-after social-icon" href="https://twitter.com/SingularityApp">
+      <i class="fa fa-4x fa-twitter no-after"></i>
+    </a>
+
+
+    <a class="no-after social-icon" href="https://github.com/singularityware">
+      <i class="fa fa-4x fa-github no-after"></i>
+    </a>
+
+
+
+               </div>
+
+                <div class="col-lg-6 footer">
+<p><img src="images/logo/logo.png" alt="Company logo" style="width:40px;padding-bottom:10px"/></p>
+ Site last generated: Jul 26, 2017 <br />
+                </div>
+            </div>
+</footer>
+
+
+    </div>
+    <!-- /.row -->
+</div>
+<!-- /.container -->
+    </div>
+
+</body>
+
+<!-- the google_analytics_id gets auto inserted from the config file -->
+
+
+
+<script>(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)})(window,document,'script','//www.google-analytics.com/analytics.js','ga');ga('create','UA-84672381-1','auto');ga('require','displayfeatures');ga('send','pageview');</script>
+
+
+</html>

@@ -1,0 +1,537 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+    <channel>
+        <title></title>
+        <description>Singularity allows a non-privileged user to 'swap out' the operating system on the host for one they control. So if the host system is running RHEL6 but your application runs in Ubuntu, you can create an Ubuntu image, install your applications into that image, copy the image to another host, and run your application on that host in it's native Ubuntu environment! Singularity also allows you to leverage the resources of whatever host you are on. This includes HPC interconnects, resource managers, file systems, GPUs and/or accelerators, etc.</description>
+        <link>http://localhost:4005/</link>
+        <atom:link href="http://localhost:4005/feed.xml" rel="self" type="application/rss+xml"/>
+        <pubDate>Wed, 26 Jul 2017 15:39:36 -0400</pubDate>
+        <lastBuildDate>Wed, 26 Jul 2017 15:39:36 -0400</lastBuildDate>
+        <generator>Jekyll v3.4.3</generator>
+        
+        <item>
+            <title>The Next Platform: Singularity is the Hinge To Swing HPC Cloud Adoption</title>
+            <description>&lt;p&gt;&lt;a href=&quot;https://www.nextplatform.com&quot; target=&quot;_blank&quot;&gt;The Next Platform&lt;/a&gt; has written an article on how Singularity is enabling HPC based workflows to easily be transitioned to cloud based computing providers! &lt;a href=&quot;http://pod.penguincomputing.com&quot; target=&quot;_blank&quot;&gt;Penguin Computing’s POD service&lt;/a&gt; is leveraging Singularity to help with the transition of local resources to cloud based resources.&lt;/p&gt;
+
+&lt;p&gt;Read about the details in the original article here: &lt;a href=&quot;https://www.nextplatform.com/2017/05/18/singularity-hinge-swing-hpc-cloud-adoption/&quot; target=&quot;_blank&quot;&gt;https://www.nextplatform.com/2017/05/18/singularity-hinge-swing-hpc-cloud-adoption/&lt;/a&gt;&lt;/p&gt;
+
+</description>
+            <pubDate>Thu, 18 May 2017 00:00:00 -0400</pubDate>
+            <link>http://localhost:4005/2017-nextplatform-singularity-hpc-cloud</link>
+            <guid isPermaLink="true">http://localhost:4005/2017-nextplatform-singularity-hpc-cloud</guid>
+            
+            
+        </item>
+        
+        <item>
+            <title>Penguin Computing Supports Singularity</title>
+            <description>&lt;p&gt;Penguin Computing &lt;a href=&quot;https://www.hpcwire.com/off-the-wire/penguin-computing-announces-support-singularity-containers-pod-hpc-cloud-scyld-clusterware-hpc-cluster-management-solution/&quot; target=&quot;_blank&quot;&gt;has announced&lt;/a&gt; support for Singularity containers for it’s HPC Cloud (Penguin Computing On-Demand) and Scyld ClusterWare HPC management software! They have started &lt;a href=&quot;https://github.com/PenguinComputing/pod&quot; target=&quot;_blank&quot;&gt;a public Github repository&lt;/a&gt; of specification files for images, and we are excited to see reproducibility coming to the resource.&lt;/p&gt;
+
+&lt;p&gt;You can see their &lt;a href=&quot;https://pod.penguincomputing.com/documentation/Singularity&quot; target=&quot;_blank&quot;&gt;documentation for Singularity containers&lt;/a&gt; and to learn more about Penguin Computing, 
+visit &lt;a href=&quot;http://www.penguincomputing.com&quot; target=&quot;_blank&quot;&gt;Penguin Computing&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/img/posts/news/penguin-computing.png&quot; alt=&quot;/assets/img/posts/news/penguin-computing.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Read about the details at the &lt;a href=&quot;https://www.hpcwire.com/off-the-wire/penguin-computing-announces-support-singularity-containers-pod-hpc-cloud-scyld-clusterware-hpc-cluster-management-solution/&quot; target=&quot;_blank&quot;&gt;press release&lt;/a&gt; on HPC Wire.&lt;/p&gt;
+
+</description>
+            <pubDate>Mon, 15 May 2017 00:00:00 -0400</pubDate>
+            <link>http://localhost:4005/2017-penguin-computing</link>
+            <guid isPermaLink="true">http://localhost:4005/2017-penguin-computing</guid>
+            
+            
+        </item>
+        
+        <item>
+            <title>Singularity Manuscript</title>
+            <description>&lt;p&gt;We are proud to announce that we have &lt;a href=&quot;http://journals.plos.org/plosone/article?id=10.1371/journal.pone.0177459&quot; target=&quot;_blank&quot;&gt;published Singularity proper!&lt;/a&gt; Please cite the Singularity software as:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Kurtzer GM, Sochat V, Bauer MW (2017) 
+Singularity: Scientific containers for mobility of compute. 
+PLoS ONE 12(5): e0177459. https://doi.org/10.1371/journal.pone.0177459
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;p&gt;Woohoo!&lt;/p&gt;
+
+</description>
+            <pubDate>Thu, 11 May 2017 00:00:00 -0400</pubDate>
+            <link>http://localhost:4005/2017-singularity-manuscript</link>
+            <guid isPermaLink="true">http://localhost:4005/2017-singularity-manuscript</guid>
+            
+            
+        </item>
+        
+        <item>
+            <title>Using Host libraries: GPU drivers and OpenMPI BTLs</title>
+            <description>&lt;p&gt;Singularity does a fantastic job  of isolating you from the host so you don’t
+have to muck about with &lt;code class=&quot;highlighter-rouge&quot;&gt;LD_LIBRARY_PATH&lt;/code&gt;, you just get exactly the library
+versions you want. However, in some situations you need to use library
+versions that match host exactly. Two common ones are NVIDIA gpu
+driver user-space libraries, and OpenMPI transport drivers for high performance
+networking. There are many ways to solve these problems. Some people build a container and
+copy the version of the libs (installed on the host) into the container.&lt;/p&gt;
+
+&lt;!-- this handles the automatic toc. use ## for subheads to auto-generate the on-page minitoc. if you use html tags, you must supply an ID for the heading element in order for it to appear in the minitoc. --&gt;
+&lt;script&gt;
+$( document ).ready(function() {
+  // Handler for .ready() called.
+
+$('#toc').toc({ minimumHeaders: 0, listType: 'ul', showSpeed: 0, headers: 'h2,h3,h4' });
+
+/* this offset helps account for the space taken up by the floating toolbar. */
+$('#toc').on('click', 'a', function() {
+  var target = $(this.getAttribute('href'))
+    , scroll_target = target.offset().top
+
+  $(window).scrollTop(scroll_target - 10);
+  return false
+})
+  
+});
+&lt;/script&gt;
+
+&lt;div id=&quot;toc&quot;&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;what-we-will-learn-today&quot;&gt;What We will learn today&lt;/h2&gt;
+&lt;p&gt;This document describes how to use a bind mount, symlinks and ldconfig so that when the host
+libraries are updated the container does not need to be rebuilt.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Note&lt;/strong&gt; this tutorial is tested with Singularity &lt;a href=&quot;https://github.com/singularityware/singularity/commit/945c6ee343a1e6101e22396a90dfdb5944f442b6&quot; target=&quot;_blank&quot;&gt;commit 945c6ee343a1e6101e22396a90dfdb5944f442b6&lt;/a&gt;,
+ which is part of the (current) development branch, and thus it should work with version 2.3 
+when that is released. The version of OpenMPI used is 2.1.0 (versions above 2.1 should work).&lt;/p&gt;
+
+&lt;h2 id=&quot;environment&quot;&gt;Environment&lt;/h2&gt;
+
+&lt;p&gt;In our environment we run CentOS 7 hosts with:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;slurm located on &lt;code class=&quot;highlighter-rouge&quot;&gt;/opt/slurm-&amp;lt;version&amp;gt;&lt;/code&gt; and the slurm user &lt;code class=&quot;highlighter-rouge&quot;&gt;slurm&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;Mellanox network cards with drivers installed to &lt;code class=&quot;highlighter-rouge&quot;&gt;/opt/mellanox&lt;/code&gt; (
+    Specifically we run a RoCEv1 network for Lustre and MPI communications)&lt;/li&gt;
+  &lt;li&gt;NVIDIA GPUs with drivers installed to &lt;code class=&quot;highlighter-rouge&quot;&gt;/lib64&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;OpenMPI (by default) for MPI processes&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h2 id=&quot;creating-your-image&quot;&gt;Creating your image&lt;/h2&gt;
+&lt;p&gt;Since we are building an ubuntu image, it may be easier to create an ubuntu VM
+to create the image. Alternatively you can follow the recipe
+&lt;a href=&quot;/building-ubuntu-rhel-host&quot; target=&quot;_blank&quot;&gt; here&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;Use the following def file to create the image.&lt;/p&gt;
+
+&lt;style&gt;
+/* Better styles for embedding GitHub Gists */
+.gist{font-size:13px;line-height:20px;margin-bottom:20px;width:100%}
+.gist pre{font-family:Menlo,Monaco,'Bitstream Vera Sans Mono','Courier New',monospace !important}
+.gist-meta{font-family:Helvetica,Arial,sans-serif;font-size:13px !important}
+.gist-meta a{color:#26a !important;text-decoration:none}
+.gist-meta a:hover{color:#0e4071 !important}
+&lt;/style&gt;
+
+&lt;script src=&quot;https://gist.github.com/l1ll1/89b3f067d5b790ace6e6767be5ea2851.js?file=hostlibs.def&quot;&gt;&lt;/script&gt;
+
+&lt;p&gt;The mysterious &lt;code class=&quot;highlighter-rouge&quot;&gt;wget&lt;/code&gt; line gets a list of all the libraries that the CentOS host
+has in &lt;code class=&quot;highlighter-rouge&quot;&gt;/lib64&lt;/code&gt; that &lt;em&gt;we&lt;/em&gt; think its safe to use in the container. Specifically
+these are things like nvidia drivers.&lt;/p&gt;
+
+&lt;style&gt;
+/* Better styles for embedding GitHub Gists */
+.gist{font-size:13px;line-height:20px;margin-bottom:20px;width:100%}
+.gist pre{font-family:Menlo,Monaco,'Bitstream Vera Sans Mono','Courier New',monospace !important}
+.gist-meta{font-family:Helvetica,Arial,sans-serif;font-size:13px !important}
+.gist-meta a{color:#26a !important;text-decoration:none}
+.gist-meta a:hover{color:#0e4071 !important}
+&lt;/style&gt;
+
+&lt;script src=&quot;https://gist.github.com/l1ll1/89b3f067d5b790ace6e6767be5ea2851.js?file=desired_hostlibs.txt&quot;&gt;&lt;/script&gt;
+
+&lt;p&gt;Also note:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;in &lt;code class=&quot;highlighter-rouge&quot;&gt;hostlibs.def&lt;/code&gt; we create a slurm user. Obviously if your &lt;code class=&quot;highlighter-rouge&quot;&gt;SlurmUser&lt;/code&gt; is different you should change this name.&lt;/li&gt;
+  &lt;li&gt;We make directories for &lt;code class=&quot;highlighter-rouge&quot;&gt;/opt&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;/usr/local/openmpi&lt;/code&gt;. We’re going to bindmount these from the host so we get all the bits of OpenMPI and Mellanox and Slurm that we need.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h2 id=&quot;executing-your-image&quot;&gt;Executing your image&lt;/h2&gt;
+&lt;p&gt;On our system we do:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;SINGULARITYENV_LD_LIBRARY_PATH=/usr/local/openmpi/2.1.0-gcc4/lib:/opt/munge-0.5.11/lib:/opt/slurm-16.05.4/lib:/opt/slurm-16.05.4/lib/slurm:/desired_hostlibs:/opt/mellanox/mxm/lib/
+export SINGULARITYENV_LD_LIBRARY_PATH
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;then&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;srun  singularity exec -B /usr/local/openmpi:/usr/local/openmpi -B /opt:/opt -B /lib64:/all_hostlibs hostlibs.img &amp;lt;path to binary&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+</description>
+            <pubDate>Tue, 09 May 2017 00:00:00 -0400</pubDate>
+            <link>http://localhost:4005/tutorial-gpu-drivers-open-mpi-mtls</link>
+            <guid isPermaLink="true">http://localhost:4005/tutorial-gpu-drivers-open-mpi-mtls</guid>
+            
+            
+        </item>
+        
+        <item>
+            <title>SingularityWare LLC on HPC Wire</title>
+            <description>&lt;p&gt;Greg and the new SingularityWare LLC. were recently &lt;a href=&quot;https://www.hpcwire.com/2017/05/04/singularity-hpc-container-technology-moves-lab/&quot; target=&quot;_blank&quot;&gt;featured on HPC Wire&lt;/a&gt; to announce changes to the organizational infrastructure (and primarily, how not much is changing at all!) and exciting underway for Singularity. Who is &lt;a href=&quot;http://www.storagenewsletter.com/2017/05/rstor-io-new-storage-start-up-in-stealth-mode/&quot; target=&quot;_blank&quot;&gt;RStor&lt;/a&gt;? What is to come for Singularity? Excited to learn more? &lt;a href=&quot;https://www.hpcwire.com/2017/05/04/singularity-hpc-container-technology-moves-lab/&quot; target=&quot;_blank&quot;&gt;Check out the post&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;assets/img/people/gmk.jpg&quot; style=&quot;width:250px&quot; /&gt;&lt;/p&gt;
+
+</description>
+            <pubDate>Thu, 04 May 2017 00:00:00 -0400</pubDate>
+            <link>http://localhost:4005/2017-singularity-llc-hpcwire</link>
+            <guid isPermaLink="true">http://localhost:4005/2017-singularity-llc-hpcwire</guid>
+            
+            
+        </item>
+        
+        <item>
+            <title>Singularity Big Announcement</title>
+            <description>&lt;h3 id=&quot;notice-to-all-singularity-users-contributors-and-collaborators&quot;&gt;Notice to all Singularity users, contributors, and collaborators&lt;/h3&gt;
+
+&lt;p&gt;This is an important announcement from Greg Kurtzer, founder and lead developer of Singularity.&lt;/p&gt;
+
+&lt;p&gt;Singularity continues to gain popularity and traction very quickly. This growth has been extremely demanding on my time and is outpacing my ability to sustain the broad amount of use cases for the rapidly expanding community with me working on it only part time. In order to meet this rapidly expanding growth, I have created a new organization, SingularityWare, LLC, which is dedicated to further developing Singularity, supporting the associated open source community and growing the project. To facilitate this, I have partnered with a company, RStor, Inc.&lt;/p&gt;
+
+&lt;p&gt;RStor is not only interested in the success of Singularity, as an open source, scientific enabling platform, but they are bringing their own very compelling and much needed cloud based storage/RDM platform to market. A partnership like this (containerized computing coupled with a cloud based storage platform) offers a very exciting and synergistic value to research computing.&lt;/p&gt;
+
+&lt;p&gt;In addition to continuing my leadership of Singularity (and the new LLC), I will be maintaining my association with Lawrence Berkeley National Laboratory, as a scientific advisor as well as continuing other efforts I am associated with (e.g. Warewulf and OpenHPC).&lt;/p&gt;
+
+&lt;p&gt;This means that I now have the resources and ability to both offer support for Singularity and hire key developers, and I would like to invite interested people to send me your resume! I am looking to hire both part time and full time staff engineers as well as University collaborations to fund interns, graduates and postdocs for Singularity development and relevant involvement.&lt;/p&gt;
+
+&lt;p&gt;Aside from additional resources, dedication, attention, and growth, the overall direction of the project will remain the same.&lt;/p&gt;
+
+&lt;p&gt;If you have any questions, comments or want to be part of this exciting new endeavor, please feel free to contact me directly.&lt;/p&gt;
+
+&lt;p&gt;Thank you!&lt;/p&gt;
+
+</description>
+            <pubDate>Fri, 28 Apr 2017 00:00:00 -0400</pubDate>
+            <link>http://localhost:4005/2017-singularity-llc</link>
+            <guid isPermaLink="true">http://localhost:4005/2017-singularity-llc</guid>
+            
+            
+        </item>
+        
+        <item>
+            <title>Singularity 2.2.1 Security Release</title>
+            <description>&lt;p&gt;For the full release announcement and downloads, please see &lt;a target=&quot;_blank&quot; href=&quot;https://github.com/singularityware/singularity/releases/tag/2.2.1&quot;&gt;the release on Github&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;This release includes a fix for a Moderate Severity security issue, and other improvements to version 2.2.&lt;/p&gt;
+
+&lt;h2 id=&quot;security-information&quot;&gt;Security information:&lt;/h2&gt;
+
+&lt;p&gt;In versions of Singularity previous to 2.2.1, it was possible for a malicious user to create and manipulate specifically crafted raw devices within containers they own. Utilizing &lt;code class=&quot;highlighter-rouge&quot;&gt;MS_NODEV&lt;/code&gt; as a container image mount option mitigates this potential vector of attack. As a result, this update should be implemented with high urgency. A big thanks to Mattias Wadenstein (@UMU in Sweden) for identifying and reporting this issue!&lt;/p&gt;
+
+&lt;h3 id=&quot;other-improvements&quot;&gt;Other improvements:&lt;/h3&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Fixed some leaky file descriptors&lt;/li&gt;
+  &lt;li&gt;Cleaned up &lt;code class=&quot;highlighter-rouge&quot;&gt;*printf()&lt;/code&gt; usage&lt;/li&gt;
+  &lt;li&gt;Catch if user’s group is not properly defined&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Please report any additional bugs &lt;a href=&quot;https://github.com/singularityware/singularity/issues/new&quot; target=&quot;_blank&quot;&gt;as issues&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;Thank you!&lt;/p&gt;
+</description>
+            <pubDate>Tue, 14 Feb 2017 00:00:00 -0500</pubDate>
+            <link>http://localhost:4005/release-2-2-1</link>
+            <guid isPermaLink="true">http://localhost:4005/release-2-2-1</guid>
+            
+            
+        </item>
+        
+        <item>
+            <title>Getting Started with Singularity and Singularity Hub</title>
+            <description>&lt;p&gt;So you want to put your scientific analysis in a nice package and run it on a cluster? You’ve probably heard of the container technology called Docker?&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/img/tutorial/horsecarrot.png&quot; /&gt;&lt;br /&gt;&lt;/p&gt;
+
+&lt;p&gt;…too bad you can’t use it on your research cluster, because it introduces huge security issues. You’ve probably also heard of &lt;a href=&quot;https://www.vagrantup.com/docs/virtualbox/&quot; target=&quot;_blank&quot;&gt;virtual machines&lt;/a&gt;, but most clusters won’t let you run those either. What options does this leave us? Oh wait, duh, you are reading this website. You already know the answer to this question.&lt;/p&gt;
+
+&lt;!-- this handles the automatic toc. use ## for subheads to auto-generate the on-page minitoc. if you use html tags, you must supply an ID for the heading element in order for it to appear in the minitoc. --&gt;
+&lt;script&gt;
+$( document ).ready(function() {
+  // Handler for .ready() called.
+
+$('#toc').toc({ minimumHeaders: 0, listType: 'ul', showSpeed: 0, headers: 'h2,h3,h4' });
+
+/* this offset helps account for the space taken up by the floating toolbar. */
+$('#toc').on('click', 'a', function() {
+  var target = $(this.getAttribute('href'))
+    , scroll_target = target.offset().top
+
+  $(window).scrollTop(scroll_target - 10);
+  return false
+})
+  
+});
+&lt;/script&gt;
+
+&lt;div id=&quot;toc&quot;&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;getting-started&quot;&gt;Getting Started&lt;/h2&gt;
+
+&lt;h3 id=&quot;install-singularity&quot;&gt;Install Singularity&lt;/h3&gt;
+&lt;p&gt;The easiest thing to do is to install Singularity on your local workstation:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;    sudo apt-get update
+    sudo apt-get -y install build-essential curl git sudo man vim autoconf libtool
+    git clone https://github.com/singularityware/singularity.git
+    &lt;span class=&quot;nb&quot;&gt;cd &lt;/span&gt;singularity
+    ./autogen.sh
+    ./configure --prefix&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;/usr/local
+    make
+    sudo make install
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;If you have the unfortunate situation of using a Mac, or just need a virtual machine, then you will want to follow the instructions &lt;a href=&quot;http://singularity.lbl.gov/install-mac&quot; target=&quot;_blank&quot;&gt;here&lt;/a&gt;. Basically, you need to install vagrant, virtual box, and then do this:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;vagrant init ubuntu/trusty64
+vagrant up
+
+vagrant ssh -c /bin/sh &lt;span class=&quot;sh&quot;&gt;&amp;lt;&amp;lt;EOF
+    sudo apt-get update
+    sudo apt-get -y install build-essential curl git sudo man vim autoconf libtool
+    git clone https://github.com/singularityware/singularity.git
+    cd singularity
+    ./autogen.sh
+    ./configure --prefix=/usr/local
+    make
+    sudo make install
+EOF
+
+&lt;/span&gt;vagrant ssh
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Once you are in your Virtual Machine, or have Singularity up and running? Well, it’s time to go NUTS of course!&lt;/p&gt;
+
+&lt;h3 id=&quot;a-little-about-singularity-hub&quot;&gt;A little about Singularity Hub&lt;/h3&gt;
+&lt;p&gt;&lt;a href=&quot;https://singularity-hub.org&quot; target=&quot;_blank&quot;&gt;Singularity Hub&lt;/a&gt; is an online registry for images. This means that you can connect a Github repo containing a build specification file to this website, and the image is going to build for you automatically, and be available programatically! We can talk more about how that happens later. If you want some quick details, you should check out the &lt;a href=&quot;https://www.singularity-hub.org/faq&quot; target=&quot;_blank&quot;&gt;Usage Docs&lt;/a&gt; on Singularity Hub.&lt;/p&gt;
+
+&lt;h2 id=&quot;make-and-run-containers&quot;&gt;Make and run containers&lt;/h2&gt;
+
+&lt;h3 id=&quot;run-an-image&quot;&gt;Run an image&lt;/h3&gt;
+&lt;p&gt;For this little preview, we are going to be first running an image, directly from Singularity Hub. This image is called &lt;a href=&quot;https://singularity-hub.org/collections/24/&quot; target=&quot;_blank&quot;&gt;vsoch/singularity-images&lt;/a&gt; and it’s associated with &lt;a href=&quot;https://www.github.com/vsoch/singularity-images&quot; target=&quot;_blank&quot;&gt;the equivalent Github repository.&lt;/a&gt;&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;singularity run shub://vsoch/singularity-images
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;&lt;button style=&quot;color:white;margin-top:5px&quot; class=&quot;btn btn-primary btn-lg asciinema-button&quot; id=&quot;Pulling-and-running-a-Singularity-Hub-image&quot;&gt;Show Video Tutorial&lt;/button&gt;&lt;/p&gt;
+&lt;div class=&quot;hidden&quot; id=&quot;asciinema-Pulling-and-running-a-Singularity-Hub-image&quot;&gt;
+    &lt;asciinema-player src=&quot;assets/asciicast/shub-pull.json&quot; poster=&quot;data:text/plain,Pulling and running a Singularity Hub image&quot; title=&quot;Pulling and running a Singularity Hub image&quot; author=&quot;vsochat@stanford.edu&quot; cols=&quot;100&quot; rows=&quot;41&quot; speed=&quot;2.0&quot; theme=&quot;asciinema&quot;&gt;
+    &lt;/asciinema-player&gt;
+&lt;/div&gt;
+
+&lt;p&gt;In the above, we use the Singularity Hub “unique resource identifier,” or &lt;code class=&quot;highlighter-rouge&quot;&gt;uri&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;shub://&lt;/code&gt; which tells the software to run an image from Singularity Hub.&lt;/p&gt;
+
+&lt;h3 id=&quot;create-an-image&quot;&gt;Create an image&lt;/h3&gt;
+&lt;p&gt;Running is great, but what if we want to mess around on the command line, using an image we’ve created ourselves? We can do that by creating an image:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;sudo singularity create analysis.img
+sudo singularity import analysis.img docker://ubuntu:latest
+singularity shell analysis.img
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;&lt;button style=&quot;color:white;margin-top:5px&quot; class=&quot;btn btn-primary btn-lg asciinema-button&quot; id=&quot;Create-and-shell-into-a-Singularity-image&quot;&gt;Show Video Tutorial&lt;/button&gt;&lt;/p&gt;
+&lt;div class=&quot;hidden&quot; id=&quot;asciinema-Create-and-shell-into-a-Singularity-image&quot;&gt;
+    &lt;asciinema-player src=&quot;assets/asciicast/singularity-interact.json&quot; poster=&quot;data:text/plain,Create and shell into a Singularity image&quot; title=&quot;Create and shell into a Singularity image&quot; author=&quot;vsochat@stanford.edu&quot; cols=&quot;100&quot; rows=&quot;41&quot; speed=&quot;2.0&quot; theme=&quot;asciinema&quot;&gt;
+    &lt;/asciinema-player&gt;
+&lt;/div&gt;
+
+&lt;p&gt;In the above, we use the docker “unique resource identifier,” or &lt;code class=&quot;highlighter-rouge&quot;&gt;uri&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;docker://&lt;/code&gt; which tells the software to import a docker image.&lt;/p&gt;
+
+&lt;p&gt;If we wanted to shell into the image and make it writable, meaning that we can write files and save changes, we would do this:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;sudo singularity shell --writable analysis.img
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Note that we need sudo, and also note that you wouldn’t be able to do this on a research cluster, because you don’t have sudo.&lt;/p&gt;
+
+&lt;h3 id=&quot;create-a-reproducible-image&quot;&gt;Create a reproducible image&lt;/h3&gt;
+&lt;p&gt;The problem with create an image, and then maybe writing stuff to it with &lt;code class=&quot;highlighter-rouge&quot;&gt;--writable&lt;/code&gt; is that your work isn’t properly saved anywhere. You COULD ship and share the entire image, but that still doesn’t help to say what was done to it, and this is problematic. To help with this, we encourage you to create a build specification file, a file called &lt;code class=&quot;highlighter-rouge&quot;&gt;Singularity&lt;/code&gt;. There are a few important sections you should know about. First, let’s look at a very simple file:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Bootstrap: docker
+From: ubuntu:latest
+
+%runscript
+
+    &lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;I can put here whatever I want to happen when the user runs my container!&quot;&lt;/span&gt;
+    &lt;span class=&quot;nb&quot;&gt;exec echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;Hello Monsoir Meatball&quot;&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$@&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;
+
+%post
+ 
+   &lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;Here we are installing software and other dependencies for the container!&quot;&lt;/span&gt;
+   apt-get update
+   apt-get install -y git 
+
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The important things to note. The header section says that we want to &lt;code class=&quot;highlighter-rouge&quot;&gt;Bootstrap&lt;/code&gt;  a docker image, specifically &lt;code class=&quot;highlighter-rouge&quot;&gt;From&lt;/code&gt; ubuntu:latest. No, you don’t actually need Docker installed to run this, because the layers are pulled from their API endpoint.&lt;/p&gt;
+
+&lt;p&gt;&lt;button style=&quot;color:white;margin-top:5px&quot; class=&quot;btn btn-primary btn-lg asciinema-button&quot; id=&quot;Bootstrapping-an-image&quot;&gt;Show Video Tutorial&lt;/button&gt;&lt;/p&gt;
+&lt;div class=&quot;hidden&quot; id=&quot;asciinema-Bootstrapping-an-image&quot;&gt;
+    &lt;asciinema-player src=&quot;assets/asciicast/singularity-bootstrap.json&quot; poster=&quot;data:text/plain,Bootstrapping an image&quot; title=&quot;Bootstrapping an image&quot; author=&quot;vsochat@stanford.edu&quot; cols=&quot;100&quot; rows=&quot;41&quot; speed=&quot;2.0&quot; theme=&quot;asciinema&quot;&gt;
+    &lt;/asciinema-player&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Once you have your bootstrap file, and you know how to use Github, you are really good to go. You can add the file to repository, connect it to Singularity Hub, and it will build automatically and be available via the &lt;code class=&quot;highlighter-rouge&quot;&gt;shub://&lt;/code&gt; endpoint. That’s it!&lt;/p&gt;
+</description>
+            <pubDate>Thu, 26 Jan 2017 00:00:00 -0500</pubDate>
+            <link>http://localhost:4005/singularity-tutorial</link>
+            <guid isPermaLink="true">http://localhost:4005/singularity-tutorial</guid>
+            
+            
+        </item>
+        
+        <item>
+            <title>Building CentOS image (emphasis on Ubuntu host)</title>
+            <description>&lt;p&gt;This recipe describes how to build a CentOS image using Singularity, with special emphasis for Ubuntu compatible host.&lt;/p&gt;
+
+&lt;!-- this handles the automatic toc. use ## for subheads to auto-generate the on-page minitoc. if you use html tags, you must supply an ID for the heading element in order for it to appear in the minitoc. --&gt;
+&lt;script&gt;
+$( document ).ready(function() {
+  // Handler for .ready() called.
+
+$('#toc').toc({ minimumHeaders: 0, listType: 'ul', showSpeed: 0, headers: 'h2,h3,h4' });
+
+/* this offset helps account for the space taken up by the floating toolbar. */
+$('#toc').on('click', 'a', function() {
+  var target = $(this.getAttribute('href'))
+    , scroll_target = target.offset().top
+
+  $(window).scrollTop(scroll_target - 10);
+  return false
+})
+  
+});
+&lt;/script&gt;
+
+&lt;div id=&quot;toc&quot;&gt;&lt;/div&gt;
+
+&lt;p&gt;&lt;strong&gt;NOTE: this tutorial is intended for &lt;a href=&quot;http://singularity.lbl.gov/release-2-2&quot;&gt;Singularity release 2.2&lt;/a&gt;, and reflects standards for that version.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;the-problem&quot;&gt;The Problem&lt;/h2&gt;
+&lt;p&gt;In theory, an Ubuntu host can create/bootstrap a CentOS image by installing the &lt;code class=&quot;highlighter-rouge&quot;&gt;yum&lt;/code&gt; package, which is a front-end controller for &lt;a href=&quot;https://en.wikipedia.org/wiki/RPM_Package_Manager&quot;&gt;RPM&lt;/a&gt;.  In order for this to work on Ubuntu, a software called &lt;a href=&quot;https://en.wikipedia.org/wiki/Berkeley_DB&quot;&gt;Berkeley DB&lt;/a&gt; must be identical in version to the version expected by &lt;code class=&quot;highlighter-rouge&quot;&gt;yum&lt;/code&gt;. Unfortunately, these two verisons tend to be different, and this situation poses a difficult challenge for Singularity to deal with. A perfectly working &lt;code class=&quot;highlighter-rouge&quot;&gt;centos.def&lt;/code&gt; file that can bootstrap a CentOS image from a RHEL-compatible host will not work when executed on Ubuntu, yielding the following error:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;YumRepo Error: All mirror URLs are not using ftp, http[s] or file.
+Eg. Invalid release/
+removing mirrorlist with no valid mirrors: /var/cache/yum/x86_64/&lt;span class=&quot;nv&quot;&gt;$releasever&lt;/span&gt;/base/mirrorlist.txt
+Error: Cannot find a valid baseurl &lt;span class=&quot;k&quot;&gt;for &lt;/span&gt;repo: base
+ERROR: Aborting with &lt;span class=&quot;nv&quot;&gt;RETVAL&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;255   
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The error above results during the bootstrap process, and happens because Ubuntu is trying to use its version of Berkeley DB to create the RPM database in the CentOS image.  Because of a version conflict, subsequent use of &lt;code class=&quot;highlighter-rouge&quot;&gt;yum&lt;/code&gt; fails because it is unable parse the Berkeley DB.&lt;/p&gt;
+
+&lt;p&gt;This problem is not exclusive to Ubuntu.  Other flavors of Linux likely have the same problem.  In fact, building a CentOS image hosted by a newer CentOS host results in the same problem!&lt;/p&gt;
+
+&lt;h2 id=&quot;potential-solutions&quot;&gt;Potential Solutions&lt;/h2&gt;
+&lt;p&gt;There are a number of solutions:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Obtain &lt;code class=&quot;highlighter-rouge&quot;&gt;db*_load&lt;/code&gt; that match the Berkeley DB version for the version of CentOS being imaged, and add a conversion step during the Singularity bootstrap process.&lt;/li&gt;
+  &lt;li&gt;Perform a double bootstrap process: First build a base container containg CentOS (e.g. import from docker) and then 2) use this image to build the final desired CentOS image. You can run a container from within another container with Singularity as long as you are root when you do it.&lt;/li&gt;
+  &lt;li&gt;Go to a CentOS machine and create a basic singularity image, and copy this image to the Ubuntu machine.  Since such an image already has working &lt;code class=&quot;highlighter-rouge&quot;&gt;/bin/sh&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;rpm&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;yum&lt;/code&gt; commands, and an RPM database with the correct version of Berkeley DB, a subsequent &lt;code class=&quot;highlighter-rouge&quot;&gt;singularity bootstrap&lt;/code&gt; on this image can successfully run &lt;code class=&quot;highlighter-rouge&quot;&gt;yum&lt;/code&gt; to update and add additional software to this image.&lt;/li&gt;
+  &lt;li&gt;Leverage &lt;code class=&quot;highlighter-rouge&quot;&gt;singularity import centos.img docker://centos:6&lt;/code&gt; to seed the CentOS image.&lt;/li&gt;
+  &lt;li&gt;Import the container from Singularity Hub, when this feature becomes available.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h3 id=&quot;create-an-image-on-centos-option-3&quot;&gt;Create an image on CentOS (Option 3)&lt;/h3&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Identify a CentOS machine with the same major version of CentOS you want to build.  Don’t use a CentOS-7 machine to build a CentOS-6 machine, because it won’t work.  (Building a CentOS-7 image on a CentOS-6 host works, but the RPM DB would actually be using an older version of Berkeley DB)&lt;/li&gt;
+  &lt;li&gt;Install Singularity on this host.  Locate the &lt;a href=&quot;https://github.com/singularityware/singularity/blob/2.x/examples/centos.def&quot;&gt;centos.def&lt;/a&gt; file from the &lt;code class=&quot;highlighter-rouge&quot;&gt;example/&lt;/code&gt; directory.  Edit to your heart’s desire (eg change OSVersion).&lt;/li&gt;
+  &lt;li&gt;Create the image, bootstrap, and run:&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;sudo singularity create /tmp/centos.img
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Bootstrap:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;sudo singularity bootstrap /tmp/centos.img centos.def
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Copy &lt;code class=&quot;highlighter-rouge&quot;&gt;/tmp/centos.img&lt;/code&gt; to the host where you want to run the container (e.g. the Ubuntu host).
+On the Ubuntu host, you can execute the CentOS container:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;singularity shell centos.img
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;If further update is desired on this image, update the &lt;code class=&quot;highlighter-rouge&quot;&gt;centos.def&lt;/code&gt; as desired, then run:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;singularity bootstrap centos.img centos.def
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;At this stage, the bootstrap works because the container already has the minimum requirements to run &lt;code class=&quot;highlighter-rouge&quot;&gt;yum&lt;/code&gt; from its own content.  There isn’t a need to install &lt;code class=&quot;highlighter-rouge&quot;&gt;yum&lt;/code&gt; on the Ubuntu host.&lt;/p&gt;
+
+&lt;h3 id=&quot;bootstrap-a-docker-container-option-4&quot;&gt;Bootstrap a Docker Container (Option 4)&lt;/h3&gt;
+
+&lt;p&gt;Instead of building your own seed CentOS image, the docker image imported using Option 4 can be used as well.  Subsequent &lt;code class=&quot;highlighter-rouge&quot;&gt;singularity bootstrap&lt;/code&gt; on such .img file works.&lt;/p&gt;
+
+&lt;h3 id=&quot;pursuing-option-1-or-2&quot;&gt;Pursuing Option 1 or 2&lt;/h3&gt;
+&lt;p&gt;You will need to find the binary for various versions of &lt;code class=&quot;highlighter-rouge&quot;&gt;db_load&lt;/code&gt;, and perhaps rename them to things like &lt;code class=&quot;highlighter-rouge&quot;&gt;db43_load&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;db47_load&lt;/code&gt;, etc.  You will then need to update the &lt;code class=&quot;highlighter-rouge&quot;&gt;build-yum.sh&lt;/code&gt; script that comes with the Singularity distribution, and add steps to convert the RPM DB files in &lt;code class=&quot;highlighter-rouge&quot;&gt;/var/lib/rpm&lt;/code&gt; to the desired version of Berkeley DB utilized by the target OS release.&lt;/p&gt;
+
+&lt;p&gt;For further details of the above steps, 
+refer to &lt;a href=&quot;https://groups.google.com/a/lbl.gov/forum/#!topic/singularity/gb-m2sjOLkM&quot;&gt;this thread&lt;/a&gt; on the mailing list, and look for postings by Tru Huynh.&lt;/p&gt;
+
+&lt;h2 id=&quot;miscellaneous-troubleshooting-notes&quot;&gt;Miscellaneous troubleshooting notes&lt;/h2&gt;
+&lt;ul&gt;
+  &lt;li&gt;The RPM command is NOT needed on the host to carry out the Singularity bootstrap process&lt;/li&gt;
+  &lt;li&gt;Initial bootstrap from an empty image needs &lt;code class=&quot;highlighter-rouge&quot;&gt;yum&lt;/code&gt;, but after a basic image with &lt;code class=&quot;highlighter-rouge&quot;&gt;/bin/sh&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;yum&lt;/code&gt; in place, the &lt;code class=&quot;highlighter-rouge&quot;&gt;yum&lt;/code&gt; installation from inside the container is called.&lt;/li&gt;
+  &lt;li&gt;The RPM containing &lt;code class=&quot;highlighter-rouge&quot;&gt;db*_load&lt;/code&gt; are different in different OS. Here is a helpful list:&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;OS             rpm                               path to db*_load 
+CentOS-6       db4-utils-4.7.25-20.el6_7.x86_64  /usr/bin/db_load
+CentOS-6       compat-db43-4.3.29-15.el6.x86_64  /usr/bin/db42_load
+CentOS-6       compat-db42-4.2.52-15.el6.x86_64  /usr/bin/db43_load
+CentOS-7       libdb-utils-5.3.21-19.el7.x86_64  /usr/bin/db_load
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Unfortunately the &lt;code class=&quot;highlighter-rouge&quot;&gt;file&lt;/code&gt; command provided by coreutils cannot give accurate version details of Berkeley DB used by the RPM database.  &lt;code class=&quot;highlighter-rouge&quot;&gt;file /var/lib/rpm/Packages&lt;/code&gt; returns “version 9” in both CentOS 6 and 7.&lt;/li&gt;
+  &lt;li&gt;Unfortunately the &lt;code class=&quot;highlighter-rouge&quot;&gt;db_dump&lt;/code&gt; command provided by &lt;code class=&quot;highlighter-rouge&quot;&gt;db4-utils&lt;/code&gt; doesn’t help either.  &lt;code class=&quot;highlighter-rouge&quot;&gt;db_dump -p /var/lib/rpm/Packages | head -1&lt;/code&gt; always returns “VERSION=3”, for RPM DB found natively in RHEL-6 and 7 hosts.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;be-careful-with-yum-release&quot;&gt;Be careful with yum release&lt;/h3&gt;
+&lt;p&gt;If building CentOS image from an Ubuntu host, one can seemingly use &lt;code class=&quot;highlighter-rouge&quot;&gt;yum --releasever=6&lt;/code&gt; to get &lt;code class=&quot;highlighter-rouge&quot;&gt;yum&lt;/code&gt; to work and get a container to build.  This kind of works, but some packages may be installed twice while others may not be consistent, since &lt;code class=&quot;highlighter-rouge&quot;&gt;yum&lt;/code&gt; is not able to properly query the RPM database created in the first stage of the bootstrap process.  This approach is &lt;em&gt;NOT&lt;/em&gt; recommended for any long-lived container images.&lt;/p&gt;
+</description>
+            <pubDate>Tue, 27 Dec 2016 00:00:00 -0500</pubDate>
+            <link>http://localhost:4005/building-centos-image</link>
+            <guid isPermaLink="true">http://localhost:4005/building-centos-image</guid>
+            
+            
+        </item>
+        
+        <item>
+            <title>HPC Roundup of 2016</title>
+            <description>&lt;p&gt;If you weren’t aware, 2016 was a wild ride for HPC! Check &lt;a href=&quot;https://www.hpcwire.com/2016/12/21/fast-rewind-2016-wild-ride-for-hpc/&quot; target=&quot;_blank&quot;&gt;HPC Wire’s fast rewind of 2016&lt;/a&gt;, including everything from people to watch to containers to public policy and the unfortunate state of things.&lt;/p&gt;
+
+&lt;p&gt;Thanks to all of our users and contributers to an amazing 2016, and onward to an even better 2017!&lt;/p&gt;
+
+</description>
+            <pubDate>Thu, 22 Dec 2016 00:00:00 -0500</pubDate>
+            <link>http://localhost:4005/2016-hpcwire-roundup</link>
+            <guid isPermaLink="true">http://localhost:4005/2016-hpcwire-roundup</guid>
+            
+            
+        </item>
+        
+    </channel>
+</rss>

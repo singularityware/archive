@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<meta name="description" content="   Support                   Previous        Next              Getting Additional Help, Support, Information  Ask a question via our Google Group          note: you can join the google group without a google account by sending email to singularity+subscribe@lbl.gov        Post an issue on GitHub if you think you found a bugWant to Join the Team?!We want you! Your help! Your contributions! Your presence! Come and hop on our Slack channel by requesting an invite from gmk@lbl.gov!We encourage you to cite us in your work and/or register your HPC cluster!                Previous        Next                 Edit me                                                                                                                                                 Site last generated: Jul 26, 2017                             ">
+
+
+<meta name="name" content="Support">
+
+<meta name="thumbnail" content="http://singularity.lbl.gov/images/logo/logo.svg">
+
+
+
+
+<title>Support | Singularity</title>
+<link rel="stylesheet" href="assets/css/syntax.css">
+
+
+<link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+<!--<link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">-->
+<link rel="stylesheet" href="assets/css/modern-business.css">
+<link rel="stylesheet" href="assets/css/lavish-bootstrap.css">
+<link rel="stylesheet" href="assets/css/customstyles.css">
+<link rel="stylesheet" href="assets/css/theme-blue.css">
+
+<link rel="stylesheet" type="text/css" href="assets/css/asciinema-player.css" />
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.min.js"></script>
+<script src="assets/js/jquery.navgoco.min.js"></script>
+
+
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/anchor-js/2.0.0/anchor.min.js"></script>
+<script src="assets/js/toc.js"></script>
+<script src="assets/js/customscripts.js"></script>
+
+<link rel="shortcut icon" href="images/favicon/favicon.ico">
+
+<!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+<!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+<!--[if lt IE 9]>
+<script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+<script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+<![endif]-->
+
+<link rel="alternate" type="application/rss+xml" title="" href="http://localhost:4005feed.xml">
+
+    <script>
+        $(document).ready(function() {
+
+            // Initialize navgoco with default options
+            $("#mysidebar").navgoco({
+                caretHtml: '',
+                accordion: true,
+                openClass: 'active', // open
+                save: false, // leave false or nav highlighting doesn't work right
+                cookie: {
+                    name: 'navgoco',
+                    expires: false,
+                    path: '/'
+                },
+                slide: {
+                    duration: 400,
+                    easing: 'swing'
+                }
+            });
+
+            $("#collapseAll").click(function(e) {
+                e.preventDefault();
+                $("#mysidebar").navgoco('toggle', false);
+            });
+
+            $("#expandAll").click(function(e) {
+                e.preventDefault();
+                $("#mysidebar").navgoco('toggle', true);
+            });
+
+        });
+
+    </script>
+    <script>
+        $(function () {
+            $('[data-toggle="tooltip"]').tooltip()
+        })
+    </script>
+    
+
+</head>
+<body>
+<!-- asciinema player -->
+<script src="assets/js/asciinema-player.js"></script>
+
+<!-- Show or hide players on button clicks-->
+<script>
+$( document ).ready(function() {
+    $(".asciinema-button").click(function(){
+        var asciinemaVideo = "#asciinema-" + $(this).attr('id');
+
+        if ($(asciinemaVideo).hasClass('hidden')){
+            $(asciinemaVideo).removeClass('hidden');
+            $(this).text('Hide Tutorial')
+        } else {
+            $(asciinemaVideo).addClass('hidden');
+            $(this).text('Show Tutorial')
+        }
+        
+    });
+});
+</script>
+
+<!-- Navigation -->
+<nav class="navbar navbar-inverse navbar-fixed-top">
+    <div class="container topnavlinks">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="index.html">&nbsp;<span class="projectTitle"> Singularity</span></a>
+        </div>
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+            <ul class="nav navbar-nav navbar-right">
+                <!-- entries without drop-downs appear here -->
+                
+                
+                
+                <li><a href="blog">News</a></li>
+                
+                
+                
+                <!-- entries with drop-downs appear here -->
+                <!-- conditional logic to control which topnav appears for the audience defined in the configuration file.-->
+                
+                
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">Docs<b class="caret"></b></a>
+                    <ul class="dropdown-menu">
+                        
+                        
+                        <li><a href="admin-guide">Admin Guide</a></li>
+                        
+                        
+                        
+                        <li><a href="user-guide">User Guide</a></li>
+                        
+                        
+                        
+                        <li><a href="links">Contributed Content</a></li>
+                        
+                        
+                    </ul>
+                </li>
+                
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">Quick Links<b class="caret"></b></a>
+                    <ul class="dropdown-menu">
+                        
+                        
+                        <li><a href="https://github.com/singularityware/singularity" target="_blank">Github Repo</a></li>
+                        
+                        
+                        
+                        <li><a href="https://groups.google.com/a/lbl.gov/forum/#!forum/singularity" target="_blank">Google Group</a></li>
+                        
+                        
+                        
+                        <li><a href="http://stackoverflow.com/questions/tagged/singularity" target="_blank">Singularity on Stack Overflow</a></li>
+                        
+                        
+                        
+                        <li><a href="https://singularity-hub.org/faq" target="_blank">Singularity Hub</a></li>
+                        
+                        
+                        
+                        <li><a href="https://singularity-container.slack.com" target="_blank">Slack</a></li>
+                        
+                        
+                        
+                        <li><a href="faq#troubleshooting">Troubleshooting</a></li>
+                        
+                        
+                    </ul>
+                </li>
+                
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">People<b class="caret"></b></a>
+                    <ul class="dropdown-menu">
+                        
+                        
+                        <li><a href="http://www.lbl.gov/" target="_blank">LBNL</a></li>
+                        
+                        
+                        
+                        <li><a href="https://srcc.stanford.edu/" target="_blank">Stanford</a></li>
+                        
+                        
+                    </ul>
+                </li>
+                
+                
+                
+                <li><a href="/search"><i class="fa fa-search"></i></li>
+                <!-- jekyll search hidden in favor of google
+                <li>
+                    <div id="search-demo-container">
+                        <input type="text" id="search-input" placeholder="search...">
+                        <ul id="results-container"></ul>
+                    </div>
+                    <script src="assets/js/jekyll-search.js" type="text/javascript"></script>
+                    <script type="text/javascript">
+                            SimpleJekyllSearch.init({
+                                searchInput: document.getElementById('search-input'),
+                                resultsContainer: document.getElementById('results-container'),
+                                dataSource: 'search.json',
+                                searchResultTemplate: '<li><a href="{url}" title="Support">{title}</a></li>',
+                    noResultsText: 'No results found.',
+                            limit: 10,
+                            fuzzy: true,
+                    })
+                    </script>
+                    end search-->
+                </li>
+            </ul>
+        </div>
+        </div>
+        <!-- /.container -->
+</nav>
+
+<!-- Page Content -->
+<div class="container">
+    <div class="col-lg-12">&nbsp;</div>
+    <!-- Content Row -->
+    <div class="row">
+        <!-- Sidebar Column -->
+        <div class="col-md-3">
+          
+
+
+
+
+
+
+
+<div class="shiny"><a href="\"><figure><img src="/images/logo/logo.svg" class="sidebar-logo"/></figure></a></div>
+
+
+<ul id="mysidebar" class="nav">
+    <li class="sidebarTitle">Singularity</li>
+    
+    
+    
+    <li>
+        <a href="#">Information</a>
+        <ul>
+            
+            
+            
+            <li><a href="blog">News</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="about">About Singularity</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="presentations">Presentations</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="citation-registration">Registry: Citations and Installations</a></li>
+            
+            
+            
+            
+        </ul>
+        
+        
+    
+    <li>
+        <a href="#">Download / Installation</a>
+        <ul>
+            
+            
+            
+            <li><a href="all-releases">All Releases</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="install-linux">Install Singularity on Linux</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="install-mac">Install Singularity on Mac</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="install-windows">Install Singularity on Windows</a></li>
+            
+            
+            
+            
+        </ul>
+        
+        
+    
+    <li>
+        <a href="#">Contributing</a>
+        <ul>
+            
+            
+            
+            <li><a href="contributing-support">User Support</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="contributing-code">Code Development</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="contributing-docs">Writing Documentation</a></li>
+            
+            
+            
+            
+        </ul>
+        
+        
+    
+    <li>
+        <a href="#">Getting Help</a>
+        <ul>
+            
+            
+            
+            <li><a href="faq">FAQ</a></li>
+            
+            
+            
+            
+            
+            
+            <li class="active"><a href="support">Support</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="faq#troubleshooting">Troubleshooting</a></li>
+            
+            
+            
+            
+        </ul>
+        
+        
+    
+    <li>
+        <a href="#">Documentation</a>
+        <ul>
+            
+            
+            
+            <li><a href="quickstart">Quick Start</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="tutorials">Recipes and Tutorials</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="links">Contributed Content Links</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="user-guide">User Documentation</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="admin-guide">Admin Documentation</a></li>
+            
+            
+            
+            
+        </ul>
+        
+        
+        
+        <!-- if you aren't using the accordion, uncomment this block:
+           <p class="external">
+               <a href="#" id="collapseAll">Collapse All</a> | <a href="#" id="expandAll">Expand All</a>
+           </p>
+           -->
+    </li>
+</ul>
+</div>
+
+<!-- this highlights the active parent class in the navgoco sidebar. this is critical so that the parent expands when you're viewing a page. This must appear below the sidebar code above. Otherwise, if placed inside customscripts.js, the script runs before the sidebar code runs and the class never gets inserted.-->
+<script>$("li.active").parents('li').toggleClass("active");</script>
+
+    <!-- Content Column -->
+    <div class="col-md-9">
+        <div class="post-header">
+   <h1 class="post-title-main">Support</h1>
+</div>
+
+
+
+<div class="post-content">
+
+   
+
+    <!-- Previous and next buttons-->
+    <div class="row" style="padding-top:30px; margin-bottom:10px"><div class="col-md-12">
+        <a href="#"><button style="width:20%; height: 70px; float:left" class="hidden previous-button btn btn-lg btn-default">Previous</button></a>
+        <a href="#"><button style="width:20%; height: 70px; float:right" class="hidden next-button btn btn-lg btn-default">Next</button></a>
+    </div></div>
+
+    <script>
+    $(document).ready(function(){
+
+        var next = $("li.active").next().last().find('a').attr('href');
+        var previous = $("li.active").prev().last().find('a').attr('href');
+
+        // NEXT BUTTON
+        if (typeof next == 'undefined'){
+            console.log("disabling next button")
+            $(".next-button").addClass("hidden")
+        } else if (next == "#") {
+            next = $("li.active").next().find("li").first().find('a').attr('href');
+            $(".next-button").closest('a').attr('href', next)
+            $(".next-button").removeClass('hidden')
+        } else {
+            $(".next-button").closest('a').attr('href', next)
+            $(".next-button").removeClass('hidden')
+        }
+
+        // PREVIOUS BUTTON
+        if (typeof previous == 'undefined'){
+            console.log("disabling previous button")
+            $(".previous-button").addClass("hidden")
+        } else if (previous == "#") {
+            previous = $("li.active").prev().find("li").last().find('a').attr('href')
+            $(".previous-button").closest('a').attr('href', previous)
+            $(".previous-button").removeClass('hidden')
+        } else {
+            $(".previous-button").closest('a').attr('href', previous)
+            $(".previous-button").removeClass('hidden')
+        }
+
+    })
+    </script>
+
+    
+
+  <h2 id="getting-additional-help-support-information">Getting Additional Help, Support, Information</h2>
+
+<ul>
+  <li>Ask a question via our <a href="https://groups.google.com/a/lbl.gov/forum/#!forum/singularity" target="_blank">Google Group</a>
+    <ul>
+      <li><em>note: you can join the google group without a google account by sending email to <a href="mailto:singularity+subscribe@lbl.gov">singularity+subscribe@lbl.gov</a></em></li>
+    </ul>
+  </li>
+  <li>Post <a href="https://www.github.com/singularityware/singularity/issues" target="_blank">an issue on GitHub</a> if you think you found a bug</li>
+</ul>
+
+<h3 id="want-to-join-the-team">Want to Join the Team?!</h3>
+<p>We want you! Your help! Your contributions! Your presence! Come and hop on our <a href="https://singularity-container.slack.com" target="_blank">Slack channel</a> by requesting an invite from <a href="mailto:gmk@lbl.gov">gmk@lbl.gov</a>!</p>
+
+<p>We encourage you to <a href="/citation-registration">cite us in your work and/or register your HPC cluster!</a></p>
+
+
+
+    <!-- More navigation on the bottom -->
+    <div class="row" style="padding-top:30px; margin-bottom:10px"><div class="col-md-12">
+        <a href="#"><button style="width:20%; height: 70px; float:left" class="hidden previous-button btn btn-lg btn-default">Previous</button></a>
+        <a href="#"><button style="width:20%; height: 70px; float:right" class="hidden next-button btn btn-lg btn-default">Next</button></a>
+    </div></div>
+
+
+    
+
+    
+
+    <a style="margin-top:10px;margin-bottom:10px" target="_blank" href="https://github.com/singularityware/singularityware.github.io/blob/master/pages/_pages/docs/support.md" class="btn btn-default btn-xs githubEditButton" role="button"><i class="fa fa-github fa-lg"></i> Edit me</a>
+    
+
+    
+
+    <div class="tags">
+        
+    </div>
+
+    
+
+</div>
+
+<hr class="shaded"/>
+
+<footer>
+            <div class="row">
+
+               <!-- Social Media links, etc -->
+               <div class="col-lg-6 footer">
+               
+    <a class="no-after social-icon" href="https://twitter.com/SingularityApp">
+      <i class="fa fa-4x fa-twitter no-after"></i>
+    </a>
+
+
+    <a class="no-after social-icon" href="https://github.com/singularityware">
+      <i class="fa fa-4x fa-github no-after"></i>
+    </a>
+
+
+
+               </div>
+
+                <div class="col-lg-6 footer">
+<p><img src="images/logo/logo.png" alt="Company logo" style="width:40px;padding-bottom:10px"/></p>
+ Site last generated: Jul 26, 2017 <br />
+                </div>
+            </div>
+</footer>
+
+
+    </div>
+    <!-- /.row -->
+</div>
+<!-- /.container -->
+    </div>
+
+</body>
+
+<!-- the google_analytics_id gets auto inserted from the config file -->
+
+
+
+<script>(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)})(window,document,'script','//www.google-analytics.com/analytics.js','ga');ga('create','UA-84672381-1','auto');ga('require','displayfeatures');ga('send','pageview');</script>
+
+
+</html>

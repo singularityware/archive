@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<meta name="description" content="   Create an Image                                                 A Singularity image, which can be referred to as a “container,” is a single file that contains a virtual file system. After creating an image you can install an operating system, applications, and save meta-data with it.Whereas Docker assembles images from layers that are stored on your computer (viewed with the docker -ps command), a Singularity image is just one file that can sit on your Desktop, in a folder on your cluster, or anywhere.Having Singularity containers housed within a single image file greatly simplifies management tasks such as sharing, copying, and branching your containers. It also means that standard Linux file system concepts like permissions, ownership, and ACLs apply to the container (e.g. I can give read only access to a colleague, or block access completely with a simple chmod command).Creating a new blank Singularity container imageSingularity will create a default container image of 768MiB using the following command:$ singularity create container.imgInitializing Singularity image subsystemOpening image file: container.imgCreating 768MiB imageBinding image to loopCreating file system within imageImage is done: container.imgHow big is it?$ du -sh container.img 29M     container.imgWe can now use ls to list details about the image.$ ls -l container.img -rwxr-xr-x 1 user group 805306400 Apr 15 11:11 container.imgNote the permissions of the image make it executable. Singularity images can be executed directly.Creating an image of a different sizeYou can change the maximum size of an image you create using the --size option. Note that --size is not a global option.  It is an option to the create sub-command and must therefore follow it:$ singularity create --size 2048 container2.imgInitializing Singularity image subsystemOpening image file: container2.imgCreating 2048MiB imageBinding image to loopCreating file system within imageImage is done: container2.img$ ls -lh container*.img -rwxr-xr-x 1 user group 2.1G Apr 15 11:34 container2.img-rwxr-xr-x 1 user group 769M Apr 15 11:11 container.imgOverwriting an image with a new oneIf you have already created an image and wish to overwrite it, you can do so with the --force option.  This option must also follow the create sub-command.$ singularity create --size 512 --force container2.imgInitializing Singularity image subsystemOpening image file: container2.imgCreating 512MiB imageBinding image to loopCreating file system within imageImage is done: container2.img$ ls -lh container*.img -rwxr-xr-x 1 user group 513M Apr 15 11:39 container2.img-rwxr-xr-x 1 user group 769M Apr 15 11:11 container.imgShow Video Tutorial        Increasing the size of an existing imageYou can increase the size of an image after it has been instantiated by using the expand Singularity sub-command as follows:$ ls -lh container.img -rwxr-xr-x 1 user group 769M Apr 15 11:11 container.img$ singularity expand container.img Initializing Singularity image subsystemOpening image file: container.imgExpanding image by 768MiBBinding image to loopChecking file systeme2fsck 1.42.13 (17-May-2015)Pass 1: Checking inodes, blocks, and sizesPass 2: Checking directory structurePass 3: Checking directory connectivityPass 4: Checking reference countsPass 5: Checking group summary information/dev/loop0: 11/49152 files (0.0% non-contiguous), 7387/196608 blocksResizing file systemresize2fs 1.42.13 (17-May-2015)Resizing the filesystem on /dev/loop0 to 393216 (4k) blocks.The filesystem on /dev/loop0 is now 393216 (4k) blocks long.Image is done: container.img$ ls -lh container.img -rwxr-xr-x 1 user group 1.6G Apr 15 12:21 container.imgSimilar to the create sub-command, you can override the default size increase (which is 768MiB) by using the --size option.Show Video Tutorial        Mounting an imageOnce an image has been created and an OS has been added with the import or bootstrap commands, you can use the shell command to start an interactive shell within the container. But this is not possible when an image does not yet contain a functional OS or shell. For debugging, development, or simply inspecting an image that lacks a functional shell you can use the mount command like so:$ mkdir /tmp/container$ singularity mount container.img /tmp/container/container.img is mounted at: /tmp/container/Spawning a new shell in this namespace, to unmount, exit shellSingularity: \w&gt; dfFilesystem     1K-blocks      Used Available Use% Mounted on/dev/loop0       1531760      1172   1451948   1% /tmp/containerSingularity: \w&gt; cd /tmp/containerSingularity: \w&gt; ls -a.  ..  lost+foundShow Video Tutorial        At this point the image just contains a bare file system because we haven’t used something like the bootstrap or import commands to install an OS.Singularity mounts images in private name-spaces so that the mount is only visible and accessible from within the freshly spawned shell. When you are finished, you can simply exit the shell and the file system will be automatically unmounted.Files can be copied from the image to the host when it is mounted in this way, but they cannot be copied from the host into the image.  This is because the image is mounted in read-only mode by default and the mount point is owned by the root user.  To copy files into a mounted image, first become root and then mount the image with the --writable option to the mount sub-command.$ sudo -i# singularity mount --writable /home/user/container.img /tmp/containerShow Video Tutorial        Copying, sharing, branching, and distributing your imageA primary goal of Singularity is mobility. The single file image format makes mobility easy.Because Singularity images are single files, they are easily copied and managed. You can copy the image to create a branch, share the image and distribute the image as easily as copying any other file you control!If you want an automated solution for building and hosting your image, you can use our container registry Singularity Hub. Singulairty Hub can automatically build bootstrap specification files from a Github repository each time that you push. It provides a simple cloud solution for storing and sharing your image.                Previous        Next                 Edit me                                                                                                                                                 Site last generated: Jul 26, 2017                             ">
+
+
+<meta name="name" content="Create an Image">
+
+<meta name="thumbnail" content="http://singularity.lbl.gov/images/logo/logo.svg">
+
+
+
+
+<title>Create an Image | Singularity</title>
+<link rel="stylesheet" href="assets/css/syntax.css">
+
+
+<link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+<link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet">
+<!--<link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">-->
+<link rel="stylesheet" href="assets/css/modern-business.css">
+<link rel="stylesheet" href="assets/css/lavish-bootstrap.css">
+<link rel="stylesheet" href="assets/css/customstyles.css">
+<link rel="stylesheet" href="assets/css/theme-blue.css">
+
+<link rel="stylesheet" type="text/css" href="assets/css/asciinema-player.css" />
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.min.js"></script>
+<script src="assets/js/jquery.navgoco.min.js"></script>
+
+
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/anchor-js/2.0.0/anchor.min.js"></script>
+<script src="assets/js/toc.js"></script>
+<script src="assets/js/customscripts.js"></script>
+
+<link rel="shortcut icon" href="images/favicon/favicon.ico">
+
+<!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+<!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+<!--[if lt IE 9]>
+<script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+<script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+<![endif]-->
+
+<link rel="alternate" type="application/rss+xml" title="" href="http://localhost:4005feed.xml">
+
+    <script>
+        $(document).ready(function() {
+
+            // Initialize navgoco with default options
+            $("#mysidebar").navgoco({
+                caretHtml: '',
+                accordion: true,
+                openClass: 'active', // open
+                save: false, // leave false or nav highlighting doesn't work right
+                cookie: {
+                    name: 'navgoco',
+                    expires: false,
+                    path: '/'
+                },
+                slide: {
+                    duration: 400,
+                    easing: 'swing'
+                }
+            });
+
+            $("#collapseAll").click(function(e) {
+                e.preventDefault();
+                $("#mysidebar").navgoco('toggle', false);
+            });
+
+            $("#expandAll").click(function(e) {
+                e.preventDefault();
+                $("#mysidebar").navgoco('toggle', true);
+            });
+
+        });
+
+    </script>
+    <script>
+        $(function () {
+            $('[data-toggle="tooltip"]').tooltip()
+        })
+    </script>
+    
+
+</head>
+<body>
+<!-- asciinema player -->
+<script src="assets/js/asciinema-player.js"></script>
+
+<!-- Show or hide players on button clicks-->
+<script>
+$( document ).ready(function() {
+    $(".asciinema-button").click(function(){
+        var asciinemaVideo = "#asciinema-" + $(this).attr('id');
+
+        if ($(asciinemaVideo).hasClass('hidden')){
+            $(asciinemaVideo).removeClass('hidden');
+            $(this).text('Hide Tutorial')
+        } else {
+            $(asciinemaVideo).addClass('hidden');
+            $(this).text('Show Tutorial')
+        }
+        
+    });
+});
+</script>
+
+<!-- Navigation -->
+<nav class="navbar navbar-inverse navbar-fixed-top">
+    <div class="container topnavlinks">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="index.html">&nbsp;<span class="projectTitle"> Singularity</span></a>
+        </div>
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+            <ul class="nav navbar-nav navbar-right">
+                <!-- entries without drop-downs appear here -->
+                
+                
+                
+                <li><a href="blog">News</a></li>
+                
+                
+                
+                <!-- entries with drop-downs appear here -->
+                <!-- conditional logic to control which topnav appears for the audience defined in the configuration file.-->
+                
+                
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">Docs<b class="caret"></b></a>
+                    <ul class="dropdown-menu">
+                        
+                        
+                        <li><a href="admin-guide">Admin Guide</a></li>
+                        
+                        
+                        
+                        <li><a href="user-guide">User Guide</a></li>
+                        
+                        
+                        
+                        <li><a href="links">Contributed Content</a></li>
+                        
+                        
+                    </ul>
+                </li>
+                
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">Quick Links<b class="caret"></b></a>
+                    <ul class="dropdown-menu">
+                        
+                        
+                        <li><a href="https://github.com/singularityware/singularity" target="_blank">Github Repo</a></li>
+                        
+                        
+                        
+                        <li><a href="https://groups.google.com/a/lbl.gov/forum/#!forum/singularity" target="_blank">Google Group</a></li>
+                        
+                        
+                        
+                        <li><a href="http://stackoverflow.com/questions/tagged/singularity" target="_blank">Singularity on Stack Overflow</a></li>
+                        
+                        
+                        
+                        <li><a href="https://singularity-hub.org/faq" target="_blank">Singularity Hub</a></li>
+                        
+                        
+                        
+                        <li><a href="https://singularity-container.slack.com" target="_blank">Slack</a></li>
+                        
+                        
+                        
+                        <li><a href="faq#troubleshooting">Troubleshooting</a></li>
+                        
+                        
+                    </ul>
+                </li>
+                
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">People<b class="caret"></b></a>
+                    <ul class="dropdown-menu">
+                        
+                        
+                        <li><a href="https://github.com/gmkurtzer" target="_blank">Gregory M. Kurtzer</a></li>
+                        
+                        
+                        
+                        <li><a href="https://github.com/vsoch" target="_blank">Vanessa Sochat</a></li>
+                        
+                        
+                        
+                        <li><a href="https://github.com/bauerm97" target="_blank">Michael Bauer</a></li>
+                        
+                        
+                        
+                        <li><a href="https://github.com/bbockelm" target="_blank">Brian Bockelman</a></li>
+                        
+                        
+                        
+                        <li><a href="https://github.com/singularityware/singularity/blob/master/AUTHORS" target="_blank">Complete Authors List</a></li>
+                        
+                        
+                    </ul>
+                </li>
+                
+                
+                
+                <li><a href="/search"><i class="fa fa-search"></i></li>
+                <!-- jekyll search hidden in favor of google
+                <li>
+                    <div id="search-demo-container">
+                        <input type="text" id="search-input" placeholder="search...">
+                        <ul id="results-container"></ul>
+                    </div>
+                    <script src="assets/js/jekyll-search.js" type="text/javascript"></script>
+                    <script type="text/javascript">
+                            SimpleJekyllSearch.init({
+                                searchInput: document.getElementById('search-input'),
+                                resultsContainer: document.getElementById('results-container'),
+                                dataSource: 'search.json',
+                                searchResultTemplate: '<li><a href="{url}" title="Create an Image">{title}</a></li>',
+                    noResultsText: 'No results found.',
+                            limit: 10,
+                            fuzzy: true,
+                    })
+                    </script>
+                    end search-->
+                </li>
+            </ul>
+        </div>
+        </div>
+        <!-- /.container -->
+</nav>
+
+<!-- Page Content -->
+<div class="container">
+    <div class="col-lg-12">&nbsp;</div>
+    <!-- Content Row -->
+    <div class="row">
+        <!-- Sidebar Column -->
+        <div class="col-md-3">
+          
+
+
+
+
+
+
+
+<div class="shiny"><a href="\"><figure><img src="/images/logo/logo.svg" class="sidebar-logo"/></figure></a></div>
+
+
+<ul id="mysidebar" class="nav">
+    <li class="sidebarTitle">User Guide</li>
+    
+    
+    
+    <li>
+        <a href="#">Getting Started</a>
+        <ul>
+            
+            
+            
+            <li><a href="user-guide">Introduction</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-quick-start-installation">Quick Start Installation</a></li>
+            
+            
+            
+            
+            
+            
+            <li class="active"><a href="create-image">Create an Image</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="bootstrap-image">Bootstrap an Image</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-content">Adding Content</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-mount">Bind Paths and Files</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-environment-metadata">Environment and Metadata</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-changing-containers">Change an Existing Container</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-docker">Singularity and Docker</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="faq#troubleshooting">Troubleshooting</a></li>
+            
+            
+            
+            
+        </ul>
+        
+        
+    
+    <li>
+        <a href="#">Commands</a>
+        <ul>
+            
+            
+            
+            <li><a href="docs-usage">Command Usage</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-bootstrap">bootstrap</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-exec">exec</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-export">export</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-import">import</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-inspect">inspect</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-pull">pull</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-run">run</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-shell">shell</a></li>
+            
+            
+            
+            
+        </ul>
+        
+        
+        
+        <!-- if you aren't using the accordion, uncomment this block:
+           <p class="external">
+               <a href="#" id="collapseAll">Collapse All</a> | <a href="#" id="expandAll">Expand All</a>
+           </p>
+           -->
+    </li>
+</ul>
+</div>
+
+<!-- this highlights the active parent class in the navgoco sidebar. this is critical so that the parent expands when you're viewing a page. This must appear below the sidebar code above. Otherwise, if placed inside customscripts.js, the script runs before the sidebar code runs and the class never gets inserted.-->
+<script>$("li.active").parents('li').toggleClass("active");</script>
+
+    <!-- Content Column -->
+    <div class="col-md-9">
+        <div class="post-header">
+   <h1 class="post-title-main">Create an Image</h1>
+</div>
+
+
+
+<div class="post-content">
+
+   
+
+    <!-- Previous and next buttons-->
+    <div class="row" style="padding-top:30px; margin-bottom:10px"><div class="col-md-12">
+        <a href="#"><button style="float:left" class="hidden previous-button btn btn-circle btn-default"><i class="fa-2x fa fa-angle-double-left"></i></button></a>
+        <a href="#"><button style="float:right" class="hidden next-button btn btn-circle btn-default"><i class="fa fa-angle-double-right fa-2x"></i></button></a>
+    </div></div>
+
+    <script>
+    $(document).ready(function(){
+
+        var next = $("li.active").next().last().find('a').attr('href');
+        var previous = $("li.active").prev().last().find('a').attr('href');
+
+        // NEXT BUTTON
+        if (typeof next == 'undefined'){
+            console.log("disabling next button")
+            $(".next-button").addClass("hidden")
+        } else if (next == "#") {
+            next = $("li.active").next().find("li").first().find('a').attr('href');
+            $(".next-button").closest('a').attr('href', next)
+            $(".next-button").removeClass('hidden')
+        } else {
+            $(".next-button").closest('a').attr('href', next)
+            $(".next-button").removeClass('hidden')
+        }
+
+        // PREVIOUS BUTTON
+        if (typeof previous == 'undefined'){
+            console.log("disabling previous button")
+            $(".previous-button").addClass("hidden")
+        } else if (previous == "#") {
+            previous = $("li.active").prev().find("li").last().find('a').attr('href')
+            $(".previous-button").closest('a').attr('href', previous)
+            $(".previous-button").removeClass('hidden')
+        } else {
+            $(".previous-button").closest('a').attr('href', previous)
+            $(".previous-button").removeClass('hidden')
+        }
+
+    })
+    </script>
+
+    
+    
+<!-- this handles the automatic toc. use ## for subheads to auto-generate the on-page minitoc. if you use html tags, you must supply an ID for the heading element in order for it to appear in the minitoc. -->
+<script>
+$( document ).ready(function() {
+  // Handler for .ready() called.
+
+$('#toc').toc({ minimumHeaders: 0, listType: 'ul', showSpeed: 0, headers: 'h2,h3,h4' });
+
+/* this offset helps account for the space taken up by the floating toolbar. */
+$('#toc').on('click', 'a', function() {
+  var target = $(this.getAttribute('href'))
+    , scroll_target = target.offset().top
+
+  $(window).scrollTop(scroll_target - 10);
+  return false
+})
+  
+});
+</script>
+
+<div id="toc"></div>
+
+    
+
+  <p>A Singularity image, which can be referred to as a “container,” is a single file that contains a virtual file system. After creating an image you can install an operating system, applications, and save meta-data with it.</p>
+
+<p>Whereas Docker assembles images from layers that are stored on your computer (viewed with the docker -ps command), a Singularity image is just one file that can sit on your Desktop, in a folder on your cluster, or anywhere.</p>
+
+<p>Having Singularity containers housed within a single image file greatly simplifies management tasks such as sharing, copying, and branching your containers. It also means that standard Linux file system concepts like permissions, ownership, and ACLs apply to the container (e.g. I can give read only access to a colleague, or block access completely with a simple chmod command).</p>
+
+<h2 id="creating-a-new-blank-singularity-container-image">Creating a new blank Singularity container image</h2>
+<p>Singularity will create a default container image of 768MiB using the following command:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ singularity create container.img
+Initializing Singularity image subsystem
+Opening image file: container.img
+Creating 768MiB image
+Binding image to loop
+Creating file system within image
+Image is done: container.img
+</code></pre>
+</div>
+<p>How big is it?</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ du -sh container.img 
+29M     container.img
+</code></pre>
+</div>
+
+<p>We can now use <code class="highlighter-rouge">ls</code> to list details about the image.</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ ls -l container.img 
+-rwxr-xr-x 1 user group 805306400 Apr 15 11:11 container.img
+</code></pre>
+</div>
+
+<p>Note the permissions of the image make it executable. Singularity images <a href="/docs-run">can be executed directly</a>.</p>
+
+<h3 id="creating-an-image-of-a-different-size">Creating an image of a different size</h3>
+
+<p>You can change the maximum size of an image you create using the <code class="highlighter-rouge">--size</code> option. Note that <code class="highlighter-rouge">--size</code> is not a global option.  It is an option to the <code class="highlighter-rouge">create</code> sub-command and must therefore follow it:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ singularity create --size 2048 container2.img
+Initializing Singularity image subsystem
+Opening image file: container2.img
+Creating 2048MiB image
+Binding image to loop
+Creating file system within image
+Image is done: container2.img
+
+$ ls -lh container*.img 
+-rwxr-xr-x 1 user group 2.1G Apr 15 11:34 container2.img
+-rwxr-xr-x 1 user group 769M Apr 15 11:11 container.img
+</code></pre>
+</div>
+
+<h3 id="overwriting-an-image-with-a-new-one">Overwriting an image with a new one</h3>
+
+<p>If you have already created an image and wish to overwrite it, you can do so with the <code class="highlighter-rouge">--force</code> option.  This option must also follow the <code class="highlighter-rouge">create</code> sub-command.</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ singularity create --size 512 --force container2.img
+Initializing Singularity image subsystem
+Opening image file: container2.img
+Creating 512MiB image
+Binding image to loop
+Creating file system within image
+Image is done: container2.img
+
+$ ls -lh container*.img 
+-rwxr-xr-x 1 user group 513M Apr 15 11:39 container2.img
+-rwxr-xr-x 1 user group 769M Apr 15 11:11 container.img
+</code></pre>
+</div>
+
+<p><button style="color:white;margin-top:5px" class="btn btn-primary btn-lg asciinema-button" id="How-to-create-images">Show Video Tutorial</button></p>
+<div class="hidden" id="asciinema-How-to-create-images">
+    <asciinema-player src="assets/asciicast/docs-create-create.js" poster="data:text/plain,How to create images" title="How to create images" author="davidgodlove@gmail.com" cols="115" rows="25" speed="2.0" theme="asciinema">
+    </asciinema-player>
+</div>
+
+<h2 id="increasing-the-size-of-an-existing-image">Increasing the size of an existing image</h2>
+<p>You can increase the size of an image after it has been instantiated by using the <code class="highlighter-rouge">expand</code> Singularity sub-command as follows:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ ls -lh container.img 
+-rwxr-xr-x 1 user group 769M Apr 15 11:11 container.img
+
+$ singularity expand container.img 
+Initializing Singularity image subsystem
+Opening image file: container.img
+Expanding image by 768MiB
+Binding image to loop
+Checking file system
+e2fsck 1.42.13 (17-May-2015)
+Pass 1: Checking inodes, blocks, and sizes
+Pass 2: Checking directory structure
+Pass 3: Checking directory connectivity
+Pass 4: Checking reference counts
+Pass 5: Checking group summary information
+/dev/loop0: 11/49152 files (0.0% non-contiguous), 7387/196608 blocks
+Resizing file system
+resize2fs 1.42.13 (17-May-2015)
+Resizing the filesystem on /dev/loop0 to 393216 (4k) blocks.
+The filesystem on /dev/loop0 is now 393216 (4k) blocks long.
+
+Image is done: container.img
+
+$ ls -lh container.img 
+-rwxr-xr-x 1 user group 1.6G Apr 15 12:21 container.img
+</code></pre>
+</div>
+
+<p>Similar to the create sub-command, you can override the default size increase (which is 768MiB) by using the <code class="highlighter-rouge">--size</code> option.</p>
+
+<p><button style="color:white;margin-top:5px" class="btn btn-primary btn-lg asciinema-button" id="How-to-expand-images">Show Video Tutorial</button></p>
+<div class="hidden" id="asciinema-How-to-expand-images">
+    <asciinema-player src="assets/asciicast/docs-create-expand.js" poster="data:text/plain,How to expand images" title="How to expand images" author="davidgodlove@gmail.com" cols="115" rows="25" speed="2.0" theme="asciinema">
+    </asciinema-player>
+</div>
+
+<h2 id="mounting-an-image">Mounting an image</h2>
+<p>Once an image has been created and an OS has been added with the <a href="/docs-import"><code class="highlighter-rouge">import</code></a> or <a href="/docs-bootstrap"><code class="highlighter-rouge">bootstrap</code></a> commands, you can use the <a href="/docs-shell"><code class="highlighter-rouge">shell</code></a> command to start an interactive shell within the container. But this is not possible when an image does not yet contain a functional OS or shell. For debugging, development, or simply inspecting an image that lacks a functional shell you can use the <code class="highlighter-rouge">mount</code> command like so:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ mkdir /tmp/container
+
+$ singularity mount container.img /tmp/container/
+container.img is mounted at: /tmp/container/
+
+Spawning a new shell in this namespace, to unmount, exit shell
+
+Singularity: \w&gt; df
+Filesystem     1K-blocks      Used Available Use% Mounted on
+/dev/loop0       1531760      1172   1451948   1% /tmp/container
+
+Singularity: \w&gt; cd /tmp/container
+
+Singularity: \w&gt; ls -a
+.  ..  lost+found
+</code></pre>
+</div>
+
+<p><button style="color:white;margin-top:5px" class="btn btn-primary btn-lg asciinema-button" id="How-to-mount-an-image">Show Video Tutorial</button></p>
+<div class="hidden" id="asciinema-How-to-mount-an-image">
+    <asciinema-player src="assets/asciicast/docs-create-mount.js" poster="data:text/plain,How to mount an image" title="How to mount an image" author="davidgodlove@gmail.com" cols="115" rows="25" speed="2.0" theme="asciinema">
+    </asciinema-player>
+</div>
+
+<p>At this point the image just contains a bare file system because we haven’t used something like the <a href="docs-bootstrap"><code class="highlighter-rouge">bootstrap</code></a> or <a href="docs-import"><code class="highlighter-rouge">import</code></a> commands to install an OS.</p>
+
+<p>Singularity mounts images in private name-spaces so that the mount is only visible and accessible from within the freshly spawned shell. When you are finished, you can simply exit the shell and the file system will be automatically unmounted.</p>
+
+<p>Files can be copied from the image to the host when it is mounted in this way, but they cannot be copied from the host into the image.  This is because the image is mounted in read-only mode by default and the mount point is owned by the root user.  To copy files into a mounted image, first become root and then mount the image with the <code class="highlighter-rouge">--writable</code> option to the <code class="highlighter-rouge">mount</code> sub-command.</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ sudo -i
+
+# singularity mount --writable /home/user/container.img /tmp/container
+</code></pre>
+</div>
+
+<p><button style="color:white;margin-top:5px" class="btn btn-primary btn-lg asciinema-button" id="How-to-mount-an-image-and-copy-files-to-it">Show Video Tutorial</button></p>
+<div class="hidden" id="asciinema-How-to-mount-an-image-and-copy-files-to-it">
+    <asciinema-player src="assets/asciicast/docs-create-rootmount.js" poster="data:text/plain,How to mount an image and copy files to it" title="How to mount an image and copy files to it" author="davidgodlove@gmail.com" cols="115" rows="25" speed="2.0" theme="asciinema">
+    </asciinema-player>
+</div>
+
+<h2 id="copying-sharing-branching-and-distributing-your-image">Copying, sharing, branching, and distributing your image</h2>
+<p>A primary goal of Singularity is mobility. The single file image format makes mobility easy.</p>
+
+<p>Because Singularity images are single files, they are easily copied and managed. You can copy the image to create a branch, share the image and distribute the image as easily as copying any other file you control!</p>
+
+<p>If you want an automated solution for building and hosting your image, you can use our container registry <a href="https://singularity-hub.org" target="_blank">Singularity Hub</a>. Singulairty Hub can automatically build <a href="/bootstrap-image#the-bootstrap-definition-file">bootstrap specification files</a> from a Github repository each time that you push. It provides a simple cloud solution for storing and sharing your image.</p>
+
+
+
+    <!-- More navigation on the bottom -->
+    <div class="row" style="padding-top:30px; margin-bottom:10px"><div class="col-md-12">
+        <a href="#"><button style="width:20%; height: 70px; float:left" class="hidden previous-button btn btn-lg btn-default">Previous</button></a>
+        <a href="#"><button style="width:20%; height: 70px; float:right" class="hidden next-button btn btn-lg btn-default">Next</button></a>
+    </div></div>
+
+
+    
+
+    
+
+    <a style="margin-top:10px;margin-bottom:10px" target="_blank" href="https://github.com/singularityware/singularityware.github.io/blob/master/pages/_pages/docs/create-image.md" class="btn btn-default btn-xs githubEditButton" role="button"><i class="fa fa-github fa-lg"></i> Edit me</a>
+    
+
+    
+
+    <div class="tags">
+        
+    </div>
+
+    
+
+</div>
+
+<hr class="shaded"/>
+
+<footer>
+            <div class="row">
+
+               <!-- Social Media links, etc -->
+               <div class="col-lg-6 footer">
+               
+    <a class="no-after social-icon" href="https://twitter.com/SingularityApp">
+      <i class="fa fa-4x fa-twitter no-after"></i>
+    </a>
+
+
+    <a class="no-after social-icon" href="https://github.com/singularityware">
+      <i class="fa fa-4x fa-github no-after"></i>
+    </a>
+
+
+
+               </div>
+
+                <div class="col-lg-6 footer">
+<p><img src="images/logo/logo.png" alt="Company logo" style="width:40px;padding-bottom:10px"/></p>
+ Site last generated: Jul 26, 2017 <br />
+                </div>
+            </div>
+</footer>
+
+
+    </div>
+    <!-- /.row -->
+</div>
+<!-- /.container -->
+    </div>
+
+</body>
+
+<!-- the google_analytics_id gets auto inserted from the config file -->
+
+
+
+<script>(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)})(window,document,'script','//www.google-analytics.com/analytics.js','ga');ga('create','UA-84672381-1','auto');ga('require','displayfeatures');ga('send','pageview');</script>
+
+
+</html>
