@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<meta name="description" content="   Build Customization   These docs are for Singularity Version 2.4. For older versions, see our archive                                                 It’s commonly the case that you want to customize your build environment, such as specifying a custom cache directory for layers, or sending your Docker Credentials to the registry endpoint. Here we will discuss those thingsCache FoldersTo make download of layers for build and pull faster and less redundant, we use a caching strategy. By default, the Singularity software will create a set of folders in your $HOME directory for docker layers, Singularity Hub images, and Docker metadata, respectively:$HOME/.singularity$HOME/.singularity/docker$HOME/.singularity/shub$HOME/.singularity/metadataFear not, you have control to customize this behavior! If you don’t want the cache to be created (and a temporary directory will be used), set SINGULARITY_DISABLE_CACHE to True/yes, or if you want to move it elsewhere, set SINGULARITY_CACHEDIR to the full path where you want to cache. Remember that when you run commands as sudo this will use root’s home at /root and not your user’s home.Pull FolderFor details about customizing the output location of pull, see thepull docs. You have the similar ability to set it to be something different, or to customize the name of the pulled image.Environment VariablesAll environmental variables are parsed by Singularity python helper functions, and specifically the file defaults.py is a gateway between variables defined at runtime, and pre-defined defaults. By way of import from the file, variables set at runtime do not change if re-imported. This was done intentionally to prevent changes during the execution, and could be changed if needed. For all variables, the order of operations works as follows:  First preference goes to environment variable set at runtime  Second preference goes to default defined in this file  Then, if neither is found, null is returned except in the case that required=True. A required=True variable not found will system exit with an error.  Variables that should not be dispayed in debug logger are set with silent=True, and are only reported to be defined.For boolean variables, the following are acceptable for True, with any kind of capitalization or not:("yes", "true", "t", "1","y")CacheThe location and usage of the cache is also determined by environment variables.SINGULARITY_DISABLE_CACHEIf you want to disable the cache, this means is that the layers are written to a temporary directory. Thus, if you want to disable cache and write to a temporary folder, simply set SINGULARITY_DISABLE_CACHE to any true/yes value. By default, the cache is not disabled.SINGULARITY_CACHEIs the base folder for caching layers and singularity hub images. If not defined, it uses default of $HOME/.singularity. If defined, the defined location is used instead. If SINGULARITY_DISABLE_CACHE is set to True, this value is ignored in favor of a temporary directory. For specific subtypes of things to cache, subdirectories are created (by python), including $SINGULARITY_CACHE/docker for docker layers and $SINGULARITY_CACHE/shub for Singularity Hub images. If the cache is not created, the Python script creates it.SINGULARITY_PULLFOLDERWhile this isn’t relevant for build, since build is close to pull, we will include it here. By default, images are pulled to the present working directory. The user can change this variable to change that.DefaultsThe following variables have defaults that can be customized by you via environment variables at runtime.DockerDOCKER_API_BASE Set as index.docker.io, which is the name of the registry. In the first version of Singularity we parsed the Registry argument from the build spec file, however now this is removed because it can be obtained directly from the image name (eg, registry/namespace/repo:tag). If you don’t specify a registry name for your image, this default is used. If you have trouble with your registry being detected from the image URI, use this variable.DOCKER_API_VERSIONIs the version of the Docker Registry API currently being used, by default now is v2.DOCKER_OSThis is exposed via the exported environment variable SINGULARITY_DOCKER_OS and pertains to images that reveal a version 2 manifest with a manifest list. In the case that the list is present, we must choose an operating system (this variable) and an architecture (below). The default is linux.DOCKER_ARCHITECTUREThis is exposed via the exported environment variable SINGULARITY_DOCKER_ARCHITECTURE and the same applies as for the DOCKER_OS with regards to being used in context of a list of manifests. In the case that the list is present, we must choose an architecture (this variable) and an os (above). The default is amd64, and other common ones include arm, arm64, ppc64le, 386, and s390x.NAMESPACEIs the default namespace, library.RUNSCRIPT_COMMAND Is not obtained from the environment, but is a hard coded default ("/bin/bash"). This is the fallback command used in the case that the docker image does not have a CMD or ENTRYPOINT.TAGIs the default tag, latest.SINGULARITY_NOHTTPSThis is relevant if you want to use a registry that doesn’t have https, and it speaks for itself. If you export the variable SINGULARITY_NOHTTPS you can force the software to not use https when interacting with a Docker registry. This use case is typically for use of a local registry.Singularity HubSHUB_API_BASEThe default base for the Singularity Hub API, which is https://singularity-hub.org/api. If you deploy your own registry, you don’t need to change this, you can again specify the registry name in the shub:// URI.GeneralSINGULARITY_PYTHREADSThe Python modules use threads (workers) to download layer files for Docker, and change permissions. By default, we will use 9 workers, unless the environment variable SINGULARITY_PYTHREADS is defined.SINGULARITY_COMMAND_ASISBy default, we want to make sure the container running process gets passed forward as the current process, so we want to prefix whatever the Docker command or entrypoint is with exec. We also want to make sure that following arguments get passed, so we append "$@". Thus, some entrypoint or cmd might look like this:     /usr/bin/pythonand we would parse it into the runscript as:     exec /usr/bin/python "$@"However, it might be the case that the user does not want this. For this reason, we have the environmental variable RUNSCRIPT_COMMAND_ASIS. If defined as yes/y/1/True/true, etc., then the runscript will remain as /usr/bin/python.                Previous        Next                 Edit me                                                                                                                                                 Site last generated: Oct 12, 2017                             ">
+
+
+<meta name="name" content="Build Customization">
+
+<meta name="thumbnail" content="http://singularity.lbl.gov/images/logo/logo.svg">
+
+
+
+
+<title>Build Customization | Singularity</title>
+<link rel="stylesheet" href="assets/css/syntax.css">
+
+
+<link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+<link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet">
+<!--<link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">-->
+<link rel="stylesheet" href="assets/css/modern-business.css">
+<link rel="stylesheet" href="assets/css/lavish-bootstrap.css">
+<link rel="stylesheet" href="assets/css/customstyles.css">
+<link rel="stylesheet" href="assets/css/theme-blue.css">
+
+<link rel="stylesheet" type="text/css" href="assets/css/asciinema-player.css" />
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.min.js"></script>
+<script src="assets/js/jquery.navgoco.min.js"></script>
+
+
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/anchor-js/2.0.0/anchor.min.js"></script>
+<script src="assets/js/toc.js"></script>
+<script src="assets/js/customscripts.js"></script>
+
+<link rel="shortcut icon" href="images/favicon/favicon.ico">
+
+<!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+<!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+<!--[if lt IE 9]>
+<script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+<script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+<![endif]-->
+
+<link rel="alternate" type="application/rss+xml" title="" href="http://localhost:4005feed.xml">
+
+    <script>
+        $(document).ready(function() {
+
+            // Initialize navgoco with default options
+            $("#mysidebar").navgoco({
+                caretHtml: '',
+                accordion: true,
+                openClass: 'active', // open
+                save: false, // leave false or nav highlighting doesn't work right
+                cookie: {
+                    name: 'navgoco',
+                    expires: false,
+                    path: '/'
+                },
+                slide: {
+                    duration: 400,
+                    easing: 'swing'
+                }
+            });
+
+            $("#collapseAll").click(function(e) {
+                e.preventDefault();
+                $("#mysidebar").navgoco('toggle', false);
+            });
+
+            $("#expandAll").click(function(e) {
+                e.preventDefault();
+                $("#mysidebar").navgoco('toggle', true);
+            });
+
+        });
+
+    </script>
+    <script>
+        $(function () {
+            $('[data-toggle="tooltip"]').tooltip()
+        })
+    </script>
+    
+
+</head>
+<body>
+<!-- asciinema player -->
+<script src="assets/js/asciinema-player.js"></script>
+
+<!-- Show or hide players on button clicks-->
+<script>
+$( document ).ready(function() {
+    $(".asciinema-button").click(function(){
+        console.log('rawwwr!')
+        var asciinemaVideo = "#" + $(this).attr('data-id');
+        if ($(asciinemaVideo).hasClass('hidden')){
+            $(asciinemaVideo).removeClass('hidden');
+            $(this).text('Hide Tutorial')
+        } else {
+            $(asciinemaVideo).addClass('hidden');
+            $(this).text('Show Tutorial')
+        }
+        
+    });
+});
+</script>
+
+<!-- Navigation -->
+<nav class="navbar navbar-inverse navbar-fixed-top">
+    <div class="container topnavlinks">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="index.html">&nbsp;<span class="projectTitle"> Singularity</span></a>
+        </div>
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+            <ul class="nav navbar-nav navbar-right">
+                <!-- entries without drop-downs appear here -->
+                
+                
+                
+                <li><a href="blog">News</a></li>
+                
+                
+                
+                <!-- entries with drop-downs appear here -->
+                <!-- conditional logic to control which topnav appears for the audience defined in the configuration file.-->
+                
+                
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">Docs<b class="caret"></b></a>
+                    <ul class="dropdown-menu">
+                        
+                        
+                        <li><a href="admin-guide">Admin Guide</a></li>
+                        
+                        
+                        
+                        <li><a href="user-guide">User Guide</a></li>
+                        
+                        
+                        
+                        <li><a href="archive">Archive</a></li>
+                        
+                        
+                        
+                        <li><a href="links">Contributed Content</a></li>
+                        
+                        
+                    </ul>
+                </li>
+                
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">Quick Links<b class="caret"></b></a>
+                    <ul class="dropdown-menu">
+                        
+                        
+                        <li><a href="https://github.com/singularityware/singularity" target="_blank">Github Repo</a></li>
+                        
+                        
+                        
+                        <li><a href="https://groups.google.com/a/lbl.gov/forum/#!forum/singularity" target="_blank">Google Group</a></li>
+                        
+                        
+                        
+                        <li><a href="http://stackoverflow.com/questions/tagged/singularity" target="_blank">Singularity on Stack Overflow</a></li>
+                        
+                        
+                        
+                        <li><a href="https://singularity-hub.org/faq" target="_blank">Singularity Hub</a></li>
+                        
+                        
+                        
+                        <li><a href="https://singularity-container.slack.com" target="_blank">Slack</a></li>
+                        
+                        
+                        
+                        <li><a href="faq#troubleshooting">Troubleshooting</a></li>
+                        
+                        
+                    </ul>
+                </li>
+                
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">People<b class="caret"></b></a>
+                    <ul class="dropdown-menu">
+                        
+                        
+                        <li><a href="https://github.com/gmkurtzer" target="_blank">Gregory M. Kurtzer</a></li>
+                        
+                        
+                        
+                        <li><a href="https://github.com/vsoch" target="_blank">Vanessa Sochat</a></li>
+                        
+                        
+                        
+                        <li><a href="https://github.com/bauerm97" target="_blank">Michael Bauer</a></li>
+                        
+                        
+                        
+                        <li><a href="https://github.com/bbockelm" target="_blank">Brian Bockelman</a></li>
+                        
+                        
+                        
+                        <li><a href="https://github.com/singularityware/singularity/blob/master/AUTHORS.md" target="_blank">Complete Authors List</a></li>
+                        
+                        
+                    </ul>
+                </li>
+                
+                
+                
+                <li><a href="/search"><i class="fa fa-search"></i></li>
+                <!-- jekyll search hidden in favor of google
+                <li>
+                    <div id="search-demo-container">
+                        <input type="text" id="search-input" placeholder="search...">
+                        <ul id="results-container"></ul>
+                    </div>
+                    <script src="assets/js/jekyll-search.js" type="text/javascript"></script>
+                    <script type="text/javascript">
+                            SimpleJekyllSearch.init({
+                                searchInput: document.getElementById('search-input'),
+                                resultsContainer: document.getElementById('results-container'),
+                                dataSource: 'search.json',
+                                searchResultTemplate: '<li><a href="{url}" title="Build Customization">{title}</a></li>',
+                    noResultsText: 'No results found.',
+                            limit: 10,
+                            fuzzy: true,
+                    })
+                    </script>
+                    end search-->
+                </li>
+            </ul>
+        </div>
+        </div>
+        <!-- /.container -->
+</nav>
+
+<!-- Page Content -->
+<div class="container">
+    <div class="col-lg-12">&nbsp;</div>
+    <!-- Content Row -->
+    <div class="row">
+        <!-- Sidebar Column -->
+        <div class="col-md-3">
+          
+
+
+
+
+
+
+<ul id="mysidebar" class="nav">
+
+    
+    <div class="shiny"><a href="\"><figure><img src="/images/logo/logo.svg" class="sidebar-logo"/></figure></a></div>
+    
+
+    <li class="sidebarTitle">User Guide</li>
+    
+    
+    
+    <li>
+        <a href="#">Getting Started</a>
+        <ul>
+            
+            
+            
+            <li><a href="user-guide">Introduction</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-installation">Installation</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="quickstart">Quick Start</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-build-container">Build a Container</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-recipes">Container Recipes</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-flow">Singularity Flow</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-mount">Bind Paths and Mounts</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-overlay">Persistent Overlays</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-instances">Running Services</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-user-checks">Container Checks</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-environment-metadata">Environment and Metadata</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-scif-apps">Reproducible SCI-F Apps</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-docker">Singularity and Docker</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="faq#troubleshooting">Troubleshooting</a></li>
+            
+            
+            
+            
+        </ul>
+        
+        
+    
+    <li>
+        <a href="#">Commands</a>
+        <ul>
+            
+            
+            
+            <li><a href="docs-usage">Command Usage</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-build">build</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-exec">exec</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-inspect">inspect</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-pull">pull</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-run">run</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-shell">shell</a></li>
+            
+            
+            
+            
+        </ul>
+        
+        
+    
+    <li>
+        <a href="#">Image Command Group</a>
+        <ul>
+            
+            
+            
+            <li><a href="docs-export">image.export</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-expand">image.expand</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-import">image.import</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-create">image.create</a></li>
+            
+            
+            
+            
+        </ul>
+        
+        
+    
+    <li>
+        <a href="#">Instance Command Group</a>
+        <ul>
+            
+            
+            
+            <li><a href="docs-instance-start">instance.start</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-instance-list">instance.list</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-instance-stop">instance.stop</a></li>
+            
+            
+            
+            
+        </ul>
+        
+        
+    
+    <li>
+        <a href="#">Deprecated</a>
+        <ul>
+            
+            
+            
+            <li><a href="docs-bootstrap">bootstrap</a></li>
+            
+            
+            
+            
+        </ul>
+        
+        
+        
+        <!-- if you aren't using the accordion, uncomment this block:
+           <p class="external">
+               <a href="#" id="collapseAll">Collapse All</a> | <a href="#" id="expandAll">Expand All</a>
+           </p>
+           -->
+    </li>
+</ul>
+</div>
+
+<!-- this highlights the active parent class in the navgoco sidebar. this is critical so that the parent expands when you're viewing a page. This must appear below the sidebar code above. Otherwise, if placed inside customscripts.js, the script runs before the sidebar code runs and the class never gets inserted.-->
+<script>$("li.active").parents('li').toggleClass("active");</script>
+
+    <!-- Content Column -->
+    <div class="col-md-9">
+        <div class="post-header">
+   <h1 class="post-title-main">Build Customization</h1>
+   <small style="color: #666; margin-top:50px; font-variant:italic">These docs are for Singularity Version 2.4. For older versions, see our <a class="no-after" 
+                                                               href="https://singularityware.github.io/archive">archive</a></small>
+</div>
+
+
+
+<div class="post-content">
+
+   
+
+    <!-- Previous and next buttons-->
+    <div class="row" style="padding-top:30px; margin-bottom:10px"><div class="col-md-12">
+        <a href="#"><button style="float:left" class="hidden previous-button btn btn-circle btn-default"><i class="fa-2x fa fa-angle-double-left"></i></button></a>
+        <a href="#"><button style="float:right" class="hidden next-button btn btn-circle btn-default"><i class="fa fa-angle-double-right fa-2x"></i></button></a>
+    </div></div>
+
+    <script>
+    $(document).ready(function(){
+
+        var next = $("li.active").next().last().find('a').attr('href');
+        var previous = $("li.active").prev().last().find('a').attr('href');
+
+        // NEXT BUTTON
+        if (typeof next == 'undefined'){
+            console.log("disabling next button")
+            $(".next-button").addClass("hidden")
+        } else if (next == "#") {
+            next = $("li.active").next().find("li").first().find('a').attr('href');
+            $(".next-button").closest('a').attr('href', next)
+            $(".next-button").removeClass('hidden')
+        } else {
+            $(".next-button").closest('a').attr('href', next)
+            $(".next-button").removeClass('hidden')
+        }
+
+        // PREVIOUS BUTTON
+        if (typeof previous == 'undefined'){
+            console.log("disabling previous button")
+            $(".previous-button").addClass("hidden")
+        } else if (previous == "#") {
+            previous = $("li.active").prev().find("li").last().find('a').attr('href')
+            $(".previous-button").closest('a').attr('href', previous)
+            $(".previous-button").removeClass('hidden')
+        } else {
+            $(".previous-button").closest('a').attr('href', previous)
+            $(".previous-button").removeClass('hidden')
+        }
+
+    })
+    </script>
+
+    
+    
+<!-- this handles the automatic toc. use ## for subheads to auto-generate the on-page minitoc. if you use html tags, you must supply an ID for the heading element in order for it to appear in the minitoc. -->
+<script>
+$( document ).ready(function() {
+  // Handler for .ready() called.
+
+$('#toc').toc({ minimumHeaders: 0, listType: 'ul', showSpeed: 0, headers: 'h2,h3,h4' });
+
+/* this offset helps account for the space taken up by the floating toolbar. */
+$('#toc').on('click', 'a', function() {
+  var target = $(this.getAttribute('href'))
+    , scroll_target = target.offset().top
+
+  $(window).scrollTop(scroll_target - 10);
+  return false
+})
+  
+});
+</script>
+
+<div id="toc"></div>
+
+    
+
+  <p>It’s commonly the case that you want to customize your build environment, such as specifying a custom cache directory for layers, or sending your Docker Credentials to the registry endpoint. Here we will discuss those things</p>
+
+<!-- this handles the automatic toc. use ## for subheads to auto-generate the on-page minitoc. if you use html tags, you must supply an ID for the heading element in order for it to appear in the minitoc. -->
+<script>
+$( document ).ready(function() {
+  // Handler for .ready() called.
+
+$('#toc').toc({ minimumHeaders: 0, listType: 'ul', showSpeed: 0, headers: 'h2,h3,h4' });
+
+/* this offset helps account for the space taken up by the floating toolbar. */
+$('#toc').on('click', 'a', function() {
+  var target = $(this.getAttribute('href'))
+    , scroll_target = target.offset().top
+
+  $(window).scrollTop(scroll_target - 10);
+  return false
+})
+  
+});
+</script>
+
+<div id="toc"></div>
+
+<h2 id="cache-folders">Cache Folders</h2>
+<p>To make download of layers for build and <a href="/docs-pull">pull</a> faster and less redundant, we use a caching strategy. By default, the Singularity software will create a set of folders in your <code class="highlighter-rouge">$HOME</code> directory for docker layers, Singularity Hub images, and Docker metadata, respectively:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$HOME/.singularity
+$HOME/.singularity/docker
+$HOME/.singularity/shub
+$HOME/.singularity/metadata
+</code></pre>
+</div>
+
+<p>Fear not, you have control to customize this behavior! If you don’t want the cache to be created (and a temporary directory will be used), set <code class="highlighter-rouge">SINGULARITY_DISABLE_CACHE</code> to True/yes, or if you want to move it elsewhere, set <code class="highlighter-rouge">SINGULARITY_CACHEDIR</code> to the full path where you want to cache. Remember that when you run commands as sudo this will use root’s home at <code class="highlighter-rouge">/root</code> and not your user’s home.</p>
+
+<h2 id="pull-folder">Pull Folder</h2>
+<p>For details about customizing the output location of <a href="/docs-pull">pull</a>, see the<a href="/docs-pull">pull docs.</a> You have the similar ability to set it to be something different, or to customize the name of the pulled image.</p>
+
+<h2 id="environment-variables">Environment Variables</h2>
+<p>All environmental variables are parsed by Singularity python helper functions, and specifically the file <a href="https://github.com/singularityware/singularity/blob/master/libexec/python/defaults.py" target="_blank">defaults.py</a> is a gateway between variables defined at runtime, and pre-defined defaults. By way of import from the file, variables set at runtime do not change if re-imported. This was done intentionally to prevent changes during the execution, and could be changed if needed. For all variables, the order of operations works as follows:</p>
+
+<ol>
+  <li>First preference goes to environment variable set at runtime</li>
+  <li>Second preference goes to default defined in this file</li>
+  <li>Then, if neither is found, null is returned except in the case that <code class="highlighter-rouge">required=True</code>. A <code class="highlighter-rouge">required=True</code> variable not found will system exit with an error.</li>
+  <li>Variables that should not be dispayed in debug logger are set with <code class="highlighter-rouge">silent=True</code>, and are only reported to be defined.</li>
+</ol>
+
+<p>For boolean variables, the following are acceptable for True, with any kind of capitalization or not:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>("yes", "true", "t", "1","y")
+</code></pre>
+</div>
+
+<h2 id="cache">Cache</h2>
+<p>The location and usage of the cache is also determined by environment variables.</p>
+
+<p><strong>SINGULARITY_DISABLE_CACHE</strong>
+If you want to disable the cache, this means is that the layers are written to a temporary directory. Thus, if you want to disable cache and write to a temporary folder, simply set <code class="highlighter-rouge">SINGULARITY_DISABLE_CACHE</code> to any true/yes value. By default, the cache is not disabled.</p>
+
+<p><strong>SINGULARITY_CACHE</strong>
+Is the base folder for caching layers and singularity hub images. If not defined, it uses default of <code class="highlighter-rouge">$HOME/.singularity</code>. If defined, the defined location is used instead. If <code class="highlighter-rouge">SINGULARITY_DISABLE_CACHE</code> is set to True, this value is ignored in favor of a temporary directory. For specific subtypes of things to cache, subdirectories are created (by python), including <code class="highlighter-rouge">$SINGULARITY_CACHE/docker</code> for docker layers and <code class="highlighter-rouge">$SINGULARITY_CACHE/shub</code> for Singularity Hub images. If the cache is not created, the Python script creates it.</p>
+
+<p><strong>SINGULARITY_PULLFOLDER</strong>
+While this isn’t relevant for build, since build is close to pull, we will include it here. By default, images are pulled to the present working directory. The user can change this variable to change that.</p>
+
+<h3 id="defaults">Defaults</h3>
+<p>The following variables have defaults that can be customized by you via environment variables at runtime.</p>
+
+<h4 id="docker">Docker</h4>
+
+<p><strong>DOCKER_API_BASE</strong> 
+Set as <code class="highlighter-rouge">index.docker.io</code>, which is the name of the registry. In the first version of Singularity we parsed the Registry argument from the build spec file, however now this is removed because it can be obtained directly from the image name (eg, <code class="highlighter-rouge">registry/namespace/repo:tag</code>). If you don’t specify a registry name for your image, this default is used. If you have trouble with your registry being detected from the image URI, use this variable.</p>
+
+<p><strong>DOCKER_API_VERSION</strong>
+Is the version of the Docker Registry API currently being used, by default now is <code class="highlighter-rouge">v2</code>.</p>
+
+<p><strong>DOCKER_OS</strong>
+This is exposed via the exported environment variable <code class="highlighter-rouge">SINGULARITY_DOCKER_OS</code> and pertains to images that reveal a version 2 manifest with a <a href="https://docs.docker.com/registry/spec/manifest-v2-2/#manifest-list">manifest list</a>. In the case that the list is present, we must choose an operating system (this variable) and an architecture (below). The default is <code class="highlighter-rouge">linux</code>.</p>
+
+<p><strong>DOCKER_ARCHITECTURE</strong>
+This is exposed via the exported environment variable <code class="highlighter-rouge">SINGULARITY_DOCKER_ARCHITECTURE</code> and the same applies as for the <code class="highlighter-rouge">DOCKER_OS</code> with regards to being used in context of a list of manifests. In the case that the list is present, we must choose an architecture (this variable) and an os (above). The default is <code class="highlighter-rouge">amd64</code>, and other common ones include <code class="highlighter-rouge">arm</code>, <code class="highlighter-rouge">arm64</code>, <code class="highlighter-rouge">ppc64le</code>, <code class="highlighter-rouge">386</code>, and <code class="highlighter-rouge">s390x</code>.</p>
+
+<p><strong>NAMESPACE</strong>
+Is the default namespace, <code class="highlighter-rouge">library</code>.</p>
+
+<p><strong>RUNSCRIPT_COMMAND</strong> 
+Is not obtained from the environment, but is a hard coded default (<code class="highlighter-rouge">"/bin/bash"</code>). This is the fallback command used in the case that the docker image does not have a <code class="highlighter-rouge">CMD</code> or <code class="highlighter-rouge">ENTRYPOINT</code>.</p>
+
+<p><strong>TAG</strong>
+Is the default tag, <code class="highlighter-rouge">latest</code>.</p>
+
+<p><strong>SINGULARITY_NOHTTPS</strong>
+This is relevant if you want to use a registry that doesn’t have https, and it speaks for itself. If you export the variable <code class="highlighter-rouge">SINGULARITY_NOHTTPS</code> you can force the software to not use https when interacting with a Docker registry. This use case is typically for use of a local registry.</p>
+
+<h4 id="singularity-hub">Singularity Hub</h4>
+
+<p><strong>SHUB_API_BASE</strong>
+The default base for the Singularity Hub API, which is <code class="highlighter-rouge">https://singularity-hub.org/api</code>. If you deploy your own registry, you don’t need to change this, you can again specify the registry name in the <code class="highlighter-rouge">shub://</code> URI.</p>
+
+<h3 id="general">General</h3>
+<p><strong>SINGULARITY_PYTHREADS</strong>
+The Python modules use threads (workers) to download layer files for Docker, and change permissions. By default, we will use 9 workers, unless the environment variable <code class="highlighter-rouge">SINGULARITY_PYTHREADS</code> is defined.</p>
+
+<p><strong>SINGULARITY_COMMAND_ASIS</strong>
+By default, we want to make sure the container running process gets passed forward as the current process, so we want to prefix whatever the Docker command or entrypoint is with <code class="highlighter-rouge">exec</code>. We also want to make sure that following arguments get passed, so we append <code class="highlighter-rouge">"$@"</code>. Thus, some entrypoint or cmd might look like this:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>     /usr/bin/python
+</code></pre>
+</div>
+
+<p>and we would parse it into the runscript as:</p>
+<div class="highlighter-rouge"><pre class="highlight"><code>     exec /usr/bin/python "$@"
+</code></pre>
+</div>
+<p>However, it might be the case that the user does not want this. For this reason, we have the environmental variable <code class="highlighter-rouge">RUNSCRIPT_COMMAND_ASIS</code>. If defined as yes/y/1/True/true, etc., then the runscript will remain as <code class="highlighter-rouge">/usr/bin/python</code>.</p>
+
+
+    <!-- More navigation on the bottom -->
+    <div class="row" style="padding-top:30px; margin-bottom:10px"><div class="col-md-12">
+        <a href="#"><button style="width:20%; height: 70px; float:left" class="hidden previous-button btn btn-lg btn-default">Previous</button></a>
+        <a href="#"><button style="width:20%; height: 70px; float:right" class="hidden next-button btn btn-lg btn-default">Next</button></a>
+    </div></div>
+
+
+    
+
+    
+
+    <a style="margin-top:10px;margin-bottom:10px" target="_blank" href="https://github.com/singularityware/singularityware.github.io/blob/master/pages/_pages/docs/build-environment.md" class="btn btn-default btn-xs githubEditButton" role="button"><i class="fa fa-github fa-lg"></i> Edit me</a>
+    
+
+    
+
+    <div class="tags">
+        
+    </div>
+
+    
+
+</div>
+
+<hr class="shaded"/>
+
+<footer>
+            <div class="row">
+
+               <!-- Social Media links, etc -->
+               <div class="col-lg-6 footer">
+               
+    <a class="no-after social-icon" href="https://twitter.com/SingularityApp">
+      <i class="fa fa-4x fa-twitter no-after"></i>
+    </a>
+
+
+    <a class="no-after social-icon" href="https://github.com/singularityware">
+      <i class="fa fa-4x fa-github no-after"></i>
+    </a>
+
+
+
+               </div>
+
+                <div class="col-lg-6 footer">
+<p><img src="images/logo/logo.png" alt="Company logo" style="width:40px;padding-bottom:10px"/></p>
+ Site last generated: Oct 12, 2017 <br />
+                </div>
+            </div>
+</footer>
+
+
+    </div>
+    <!-- /.row -->
+</div>
+<!-- /.container -->
+    </div>
+
+</body>
+
+<!-- the google_analytics_id gets auto inserted from the config file -->
+
+
+
+<script>(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)})(window,document,'script','//www.google-analytics.com/analytics.js','ga');ga('create','UA-84672381-1','auto');ga('require','displayfeatures');ga('send','pageview');</script>
+
+
+</html>

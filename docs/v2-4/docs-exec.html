@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<meta name="description" content="   Singularity Exec   These docs are for Singularity Version 2.4. For older versions, see our archive                                         The exec Singularity sub-command allows you to spawn an arbitrary command within your container image as if it were running directly on the host system. All standard IO, pipes, and file systems are accessible via the command being exec’ed within the container. Note that this exec is different from the Docker exec, as it does not require a container to be “running” before using it.ExamplesPrinting the OS release inside the container:$ singularity exec container.img cat /etc/os-releasePRETTY_NAME="Debian GNU/Linux 8 (jessie)"NAME="Debian GNU/Linux"VERSION_ID="8"VERSION="8 (jessie)"ID=debianHOME_URL="http://www.debian.org/"SUPPORT_URL="http://www.debian.org/support"BUG_REPORT_URL="https://bugs.debian.org/"$ Special CharactersAnd properly passing along special characters to the program within the container.$ singularity exec container.img echo -ne "hello\nworld\n\n"helloworld$ And a demonstration using pipes:$ cat debian.def | singularity exec container.img grep 'MirrorURL'MirrorURL "http://ftp.us.debian.org/debian/"$ A Python exampleStarting with the file hello.py in the current directory with the contents of:#!/usr/bin/pythonimport sysprint("Hello World: The Python version is %s.%s.%s" % sys.version_info[:3])Because our home directory is automatically bound into the container, and we are running this from our home directory, we can easily execute that script using the Python within the container:$ singularity exec /tmp/Centos7-ompi.img /usr/bin/python hello.py Hello World: The Python version is 2.7.5We can also pipe that script through the container and into the Python binary which exists inside the container using the following command:$ cat hello.py | singularity exec /tmp/Centos7-ompi.img /usr/bin/python Hello World: The Python version is 2.7.5For demonstration purposes, let’s also try to use the latest Python container which exists in DockerHub to run this script:$ singularity exec docker://python:latest /usr/local/bin/python hello.pylibrary/python:latestDownloading layer: sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4Downloading layer: sha256:fbd06356349dd9fb6af91f98c398c0c5d05730a9996bbf88ff2f2067d59c70c4Downloading layer: sha256:644eaeceac9ff6195008c1e20dd693346c35b0b65b9a90b3bcba18ea4bcef071Downloading layer: sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4Downloading layer: sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4Downloading layer: sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4Downloading layer: sha256:766692404ca72f4e31e248eb82f8eca6b2fcc15b22930ec50e3804cc3efe0abaDownloading layer: sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4Downloading layer: sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4Downloading layer: sha256:6a3d69edbe90ef916e1ecd8d197f056de873ed08bcfd55a1cd0b43588f3dbb9aDownloading layer: sha256:ff18e19c2db42055e6f34323700737bde3c819b413997cddace2c1b7180d7efdDownloading layer: sha256:7b9457ec39de00bc70af1c9631b9ae6ede5a3ab715e6492c0a2641868ec1dedaDownloading layer: sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4Downloading layer: sha256:6a5a5368e0c2d3e5909184fa28ddfd56072e7ff3ee9a945876f7eee5896ef5bbHello World: The Python version is 3.5.2A GPU exampleIf your host system has an NVIDIA GPU card and a driver installed you canleverage the card with the --nv option.  (This example requires a fairly recent version of the NVIDIA driver on the host system to run the latest version of TensorFlow.$ git clone https://github.com/tensorflow/models.git$ singularity exec --nv docker://tensorflow/tensorflow:latest-gpu \    python ./models/tutorials/image/mnist/convolutional.pyDocker image path: index.docker.io/tensorflow/tensorflow:latest-gpuCache folder set to /home/david/.singularity/docker[19/19] |===================================| 100.0%Creating container runtime...Extracting data/train-images-idx3-ubyte.gzExtracting data/train-labels-idx1-ubyte.gzExtracting data/t10k-images-idx3-ubyte.gzExtracting data/t10k-labels-idx1-ubyte.gz2017-08-18 20:33:59.677580: W tensorflow/core/platform/cpu_feature_guard.cc:45] The TensorFlow library wasn't compiled to use SSE4.1 instructions, but these are available on your machine and could speed up CPU computations.2017-08-18 20:33:59.677620: W tensorflow/core/platform/cpu_feature_guard.cc:45] The TensorFlow library wasn't compiled to use SSE4.2 instructions, but these are available on your machine and could speed up CPU computations.2017-08-18 20:34:00.148531: I tensorflow/stream_executor/cuda/cuda_gpu_executor.cc:893] successful NUMA node read from SysFS had negative value (-1), but there must be at least one NUMA node, so returning NUMA node zero2017-08-18 20:34:00.148926: I tensorflow/core/common_runtime/gpu/gpu_device.cc:955] Found device 0 with properties:name: GeForce GTX 760 (192-bit)major: 3 minor: 0 memoryClockRate (GHz) 0.8885pciBusID 0000:03:00.0Total memory: 2.95GiBFree memory: 2.92GiB2017-08-18 20:34:00.148954: I tensorflow/core/common_runtime/gpu/gpu_device.cc:976] DMA: 02017-08-18 20:34:00.148965: I tensorflow/core/common_runtime/gpu/gpu_device.cc:986] 0:   Y2017-08-18 20:34:00.148979: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1045] Creating TensorFlow device (/gpu:0) -&gt; (device: 0, name: GeForce GTX 760 (192-bit), pci bus id: 0000:03:00.0)Initialized!Step 0 (epoch 0.00), 21.7 msMinibatch loss: 8.334, learning rate: 0.010000Minibatch error: 85.9%Validation error: 84.6%Step 100 (epoch 0.12), 20.9 msMinibatch loss: 3.235, learning rate: 0.010000Minibatch error: 4.7%Validation error: 7.8%Step 200 (epoch 0.23), 20.5 msMinibatch loss: 3.363, learning rate: 0.010000Minibatch error: 9.4%Validation error: 4.2%[...snip...]Step 8500 (epoch 9.89), 20.5 msMinibatch loss: 1.602, learning rate: 0.006302Minibatch error: 0.0%Validation error: 0.9%Test error: 0.8%                Previous        Next                 Edit me                                                                                                                                                 Site last generated: Oct 12, 2017                             ">
+
+
+<meta name="name" content="Singularity Exec">
+
+<meta name="thumbnail" content="http://singularity.lbl.gov/images/logo/logo.svg">
+
+
+
+
+<title>Singularity Exec | Singularity</title>
+<link rel="stylesheet" href="assets/css/syntax.css">
+
+
+<link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+<link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet">
+<!--<link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">-->
+<link rel="stylesheet" href="assets/css/modern-business.css">
+<link rel="stylesheet" href="assets/css/lavish-bootstrap.css">
+<link rel="stylesheet" href="assets/css/customstyles.css">
+<link rel="stylesheet" href="assets/css/theme-blue.css">
+
+<link rel="stylesheet" type="text/css" href="assets/css/asciinema-player.css" />
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.min.js"></script>
+<script src="assets/js/jquery.navgoco.min.js"></script>
+
+
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/anchor-js/2.0.0/anchor.min.js"></script>
+<script src="assets/js/toc.js"></script>
+<script src="assets/js/customscripts.js"></script>
+
+<link rel="shortcut icon" href="images/favicon/favicon.ico">
+
+<!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+<!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+<!--[if lt IE 9]>
+<script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+<script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+<![endif]-->
+
+<link rel="alternate" type="application/rss+xml" title="" href="http://localhost:4005feed.xml">
+
+    <script>
+        $(document).ready(function() {
+
+            // Initialize navgoco with default options
+            $("#mysidebar").navgoco({
+                caretHtml: '',
+                accordion: true,
+                openClass: 'active', // open
+                save: false, // leave false or nav highlighting doesn't work right
+                cookie: {
+                    name: 'navgoco',
+                    expires: false,
+                    path: '/'
+                },
+                slide: {
+                    duration: 400,
+                    easing: 'swing'
+                }
+            });
+
+            $("#collapseAll").click(function(e) {
+                e.preventDefault();
+                $("#mysidebar").navgoco('toggle', false);
+            });
+
+            $("#expandAll").click(function(e) {
+                e.preventDefault();
+                $("#mysidebar").navgoco('toggle', true);
+            });
+
+        });
+
+    </script>
+    <script>
+        $(function () {
+            $('[data-toggle="tooltip"]').tooltip()
+        })
+    </script>
+    
+
+</head>
+<body>
+<!-- asciinema player -->
+<script src="assets/js/asciinema-player.js"></script>
+
+<!-- Show or hide players on button clicks-->
+<script>
+$( document ).ready(function() {
+    $(".asciinema-button").click(function(){
+        console.log('rawwwr!')
+        var asciinemaVideo = "#" + $(this).attr('data-id');
+        if ($(asciinemaVideo).hasClass('hidden')){
+            $(asciinemaVideo).removeClass('hidden');
+            $(this).text('Hide Tutorial')
+        } else {
+            $(asciinemaVideo).addClass('hidden');
+            $(this).text('Show Tutorial')
+        }
+        
+    });
+});
+</script>
+
+<!-- Navigation -->
+<nav class="navbar navbar-inverse navbar-fixed-top">
+    <div class="container topnavlinks">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="index.html">&nbsp;<span class="projectTitle"> Singularity</span></a>
+        </div>
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+            <ul class="nav navbar-nav navbar-right">
+                <!-- entries without drop-downs appear here -->
+                
+                
+                
+                <li><a href="blog">News</a></li>
+                
+                
+                
+                <!-- entries with drop-downs appear here -->
+                <!-- conditional logic to control which topnav appears for the audience defined in the configuration file.-->
+                
+                
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">Docs<b class="caret"></b></a>
+                    <ul class="dropdown-menu">
+                        
+                        
+                        <li><a href="admin-guide">Admin Guide</a></li>
+                        
+                        
+                        
+                        <li><a href="user-guide">User Guide</a></li>
+                        
+                        
+                        
+                        <li><a href="archive">Archive</a></li>
+                        
+                        
+                        
+                        <li><a href="links">Contributed Content</a></li>
+                        
+                        
+                    </ul>
+                </li>
+                
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">Quick Links<b class="caret"></b></a>
+                    <ul class="dropdown-menu">
+                        
+                        
+                        <li><a href="https://github.com/singularityware/singularity" target="_blank">Github Repo</a></li>
+                        
+                        
+                        
+                        <li><a href="https://groups.google.com/a/lbl.gov/forum/#!forum/singularity" target="_blank">Google Group</a></li>
+                        
+                        
+                        
+                        <li><a href="http://stackoverflow.com/questions/tagged/singularity" target="_blank">Singularity on Stack Overflow</a></li>
+                        
+                        
+                        
+                        <li><a href="https://singularity-hub.org/faq" target="_blank">Singularity Hub</a></li>
+                        
+                        
+                        
+                        <li><a href="https://singularity-container.slack.com" target="_blank">Slack</a></li>
+                        
+                        
+                        
+                        <li><a href="faq#troubleshooting">Troubleshooting</a></li>
+                        
+                        
+                    </ul>
+                </li>
+                
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">People<b class="caret"></b></a>
+                    <ul class="dropdown-menu">
+                        
+                        
+                        <li><a href="https://github.com/gmkurtzer" target="_blank">Gregory M. Kurtzer</a></li>
+                        
+                        
+                        
+                        <li><a href="https://github.com/vsoch" target="_blank">Vanessa Sochat</a></li>
+                        
+                        
+                        
+                        <li><a href="https://github.com/bauerm97" target="_blank">Michael Bauer</a></li>
+                        
+                        
+                        
+                        <li><a href="https://github.com/bbockelm" target="_blank">Brian Bockelman</a></li>
+                        
+                        
+                        
+                        <li><a href="https://github.com/singularityware/singularity/blob/master/AUTHORS.md" target="_blank">Complete Authors List</a></li>
+                        
+                        
+                    </ul>
+                </li>
+                
+                
+                
+                <li><a href="/search"><i class="fa fa-search"></i></li>
+                <!-- jekyll search hidden in favor of google
+                <li>
+                    <div id="search-demo-container">
+                        <input type="text" id="search-input" placeholder="search...">
+                        <ul id="results-container"></ul>
+                    </div>
+                    <script src="assets/js/jekyll-search.js" type="text/javascript"></script>
+                    <script type="text/javascript">
+                            SimpleJekyllSearch.init({
+                                searchInput: document.getElementById('search-input'),
+                                resultsContainer: document.getElementById('results-container'),
+                                dataSource: 'search.json',
+                                searchResultTemplate: '<li><a href="{url}" title="Singularity Exec">{title}</a></li>',
+                    noResultsText: 'No results found.',
+                            limit: 10,
+                            fuzzy: true,
+                    })
+                    </script>
+                    end search-->
+                </li>
+            </ul>
+        </div>
+        </div>
+        <!-- /.container -->
+</nav>
+
+<!-- Page Content -->
+<div class="container">
+    <div class="col-lg-12">&nbsp;</div>
+    <!-- Content Row -->
+    <div class="row">
+        <!-- Sidebar Column -->
+        <div class="col-md-3">
+          
+
+
+
+
+
+
+<ul id="mysidebar" class="nav">
+
+    
+    <div class="shiny"><a href="\"><figure><img src="/images/logo/logo.svg" class="sidebar-logo"/></figure></a></div>
+    
+
+    <li class="sidebarTitle">User Guide</li>
+    
+    
+    
+    <li>
+        <a href="#">Getting Started</a>
+        <ul>
+            
+            
+            
+            <li><a href="user-guide">Introduction</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-installation">Installation</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="quickstart">Quick Start</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-build-container">Build a Container</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-recipes">Container Recipes</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-flow">Singularity Flow</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-mount">Bind Paths and Mounts</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-overlay">Persistent Overlays</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-instances">Running Services</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-user-checks">Container Checks</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-environment-metadata">Environment and Metadata</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-scif-apps">Reproducible SCI-F Apps</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-docker">Singularity and Docker</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="faq#troubleshooting">Troubleshooting</a></li>
+            
+            
+            
+            
+        </ul>
+        
+        
+    
+    <li>
+        <a href="#">Commands</a>
+        <ul>
+            
+            
+            
+            <li><a href="docs-usage">Command Usage</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-build">build</a></li>
+            
+            
+            
+            
+            
+            
+            <li class="active"><a href="docs-exec">exec</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-inspect">inspect</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-pull">pull</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-run">run</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-shell">shell</a></li>
+            
+            
+            
+            
+        </ul>
+        
+        
+    
+    <li>
+        <a href="#">Image Command Group</a>
+        <ul>
+            
+            
+            
+            <li><a href="docs-export">image.export</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-expand">image.expand</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-import">image.import</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-create">image.create</a></li>
+            
+            
+            
+            
+        </ul>
+        
+        
+    
+    <li>
+        <a href="#">Instance Command Group</a>
+        <ul>
+            
+            
+            
+            <li><a href="docs-instance-start">instance.start</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-instance-list">instance.list</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-instance-stop">instance.stop</a></li>
+            
+            
+            
+            
+        </ul>
+        
+        
+    
+    <li>
+        <a href="#">Deprecated</a>
+        <ul>
+            
+            
+            
+            <li><a href="docs-bootstrap">bootstrap</a></li>
+            
+            
+            
+            
+        </ul>
+        
+        
+        
+        <!-- if you aren't using the accordion, uncomment this block:
+           <p class="external">
+               <a href="#" id="collapseAll">Collapse All</a> | <a href="#" id="expandAll">Expand All</a>
+           </p>
+           -->
+    </li>
+</ul>
+</div>
+
+<!-- this highlights the active parent class in the navgoco sidebar. this is critical so that the parent expands when you're viewing a page. This must appear below the sidebar code above. Otherwise, if placed inside customscripts.js, the script runs before the sidebar code runs and the class never gets inserted.-->
+<script>$("li.active").parents('li').toggleClass("active");</script>
+
+    <!-- Content Column -->
+    <div class="col-md-9">
+        <div class="post-header">
+   <h1 class="post-title-main">Singularity Exec</h1>
+   <small style="color: #666; margin-top:50px; font-variant:italic">These docs are for Singularity Version 2.4. For older versions, see our <a class="no-after" 
+                                                               href="https://singularityware.github.io/archive">archive</a></small>
+</div>
+
+
+
+<div class="post-content">
+
+   
+
+    <!-- Previous and next buttons-->
+    <div class="row" style="padding-top:30px; margin-bottom:10px"><div class="col-md-12">
+        <a href="#"><button style="float:left" class="hidden previous-button btn btn-circle btn-default"><i class="fa-2x fa fa-angle-double-left"></i></button></a>
+        <a href="#"><button style="float:right" class="hidden next-button btn btn-circle btn-default"><i class="fa fa-angle-double-right fa-2x"></i></button></a>
+    </div></div>
+
+    <script>
+    $(document).ready(function(){
+
+        var next = $("li.active").next().last().find('a').attr('href');
+        var previous = $("li.active").prev().last().find('a').attr('href');
+
+        // NEXT BUTTON
+        if (typeof next == 'undefined'){
+            console.log("disabling next button")
+            $(".next-button").addClass("hidden")
+        } else if (next == "#") {
+            next = $("li.active").next().find("li").first().find('a').attr('href');
+            $(".next-button").closest('a').attr('href', next)
+            $(".next-button").removeClass('hidden')
+        } else {
+            $(".next-button").closest('a').attr('href', next)
+            $(".next-button").removeClass('hidden')
+        }
+
+        // PREVIOUS BUTTON
+        if (typeof previous == 'undefined'){
+            console.log("disabling previous button")
+            $(".previous-button").addClass("hidden")
+        } else if (previous == "#") {
+            previous = $("li.active").prev().find("li").last().find('a').attr('href')
+            $(".previous-button").closest('a').attr('href', previous)
+            $(".previous-button").removeClass('hidden')
+        } else {
+            $(".previous-button").closest('a').attr('href', previous)
+            $(".previous-button").removeClass('hidden')
+        }
+
+    })
+    </script>
+
+    
+
+  <p>The <code class="highlighter-rouge">exec</code> Singularity sub-command allows you to spawn an arbitrary command within your container image as if it were running directly on the host system. All standard IO, pipes, and file systems are accessible via the command being exec’ed within the container. Note that this exec is different from the Docker exec, as it does not require a container to be “running” before using it.</p>
+
+<!-- this handles the automatic toc. use ## for subheads to auto-generate the on-page minitoc. if you use html tags, you must supply an ID for the heading element in order for it to appear in the minitoc. -->
+<script>
+$( document ).ready(function() {
+  // Handler for .ready() called.
+
+$('#toc').toc({ minimumHeaders: 0, listType: 'ul', showSpeed: 0, headers: 'h2,h3,h4' });
+
+/* this offset helps account for the space taken up by the floating toolbar. */
+$('#toc').on('click', 'a', function() {
+  var target = $(this.getAttribute('href'))
+    , scroll_target = target.offset().top
+
+  $(window).scrollTop(scroll_target - 10);
+  return false
+})
+  
+});
+</script>
+
+<div id="toc"></div>
+
+<h2 id="examples">Examples</h2>
+
+<h3 id="printing-the-os-release-inside-the-container">Printing the OS release inside the container:</h3>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code><span class="gp">$ </span>singularity <span class="nb">exec </span>container.img cat /etc/os-release
+<span class="nv">PRETTY_NAME</span><span class="o">=</span><span class="s2">"Debian GNU/Linux 8 (jessie)"</span>
+<span class="nv">NAME</span><span class="o">=</span><span class="s2">"Debian GNU/Linux"</span>
+<span class="nv">VERSION_ID</span><span class="o">=</span><span class="s2">"8"</span>
+<span class="nv">VERSION</span><span class="o">=</span><span class="s2">"8 (jessie)"</span>
+<span class="nv">ID</span><span class="o">=</span>debian
+<span class="nv">HOME_URL</span><span class="o">=</span><span class="s2">"http://www.debian.org/"</span>
+<span class="nv">SUPPORT_URL</span><span class="o">=</span><span class="s2">"http://www.debian.org/support"</span>
+<span class="nv">BUG_REPORT_URL</span><span class="o">=</span><span class="s2">"https://bugs.debian.org/"</span>
+<span class="gp">$ </span>
+</code></pre>
+</div>
+
+<h3 id="special-characters">Special Characters</h3>
+<p>And properly passing along special characters to the program within the container.</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code><span class="gp">$ </span>singularity <span class="nb">exec </span>container.img <span class="nb">echo</span> -ne <span class="s2">"hello</span><span class="se">\n</span><span class="s2">world</span><span class="se">\n\n</span><span class="s2">"</span>
+hello
+world
+<span class="gp">$ </span>
+</code></pre>
+</div>
+
+<p>And a demonstration using pipes:</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code><span class="gp">$ </span>cat debian.def | singularity <span class="nb">exec </span>container.img grep <span class="s1">'MirrorURL'</span>
+MirrorURL <span class="s2">"http://ftp.us.debian.org/debian/"</span>
+<span class="gp">$ </span>
+</code></pre>
+</div>
+
+<h3 id="a-python-example">A Python example</h3>
+<p>Starting with the file <code class="highlighter-rouge">hello.py</code> in the current directory with the contents of:</p>
+
+<div class="language-python highlighter-rouge"><pre class="highlight"><code><span class="c">#!/usr/bin/python</span>
+
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="k">print</span><span class="p">(</span><span class="s">"Hello World: The Python version is </span><span class="si">%</span><span class="s">s.</span><span class="si">%</span><span class="s">s.</span><span class="si">%</span><span class="s">s"</span> <span class="o">%</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span><span class="p">[:</span><span class="mi">3</span><span class="p">])</span>
+</code></pre>
+</div>
+
+<p>Because our home directory is automatically bound into the container, and we are running this from our home directory, we can easily execute that script using the Python within the container:</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code><span class="gp">$ </span>singularity <span class="nb">exec</span> /tmp/Centos7-ompi.img /usr/bin/python hello.py 
+Hello World: The Python version is 2.7.5
+</code></pre>
+</div>
+
+<p>We can also pipe that script through the container and into the Python binary which exists inside the container using the following command:</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code><span class="gp">$ </span>cat hello.py | singularity <span class="nb">exec</span> /tmp/Centos7-ompi.img /usr/bin/python 
+Hello World: The Python version is 2.7.5
+</code></pre>
+</div>
+
+<p>For demonstration purposes, let’s also try to use the latest Python container which exists in DockerHub to run this script:</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code><span class="gp">$ </span>singularity <span class="nb">exec </span>docker://python:latest /usr/local/bin/python hello.py
+library/python:latest
+Downloading layer: sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4
+Downloading layer: sha256:fbd06356349dd9fb6af91f98c398c0c5d05730a9996bbf88ff2f2067d59c70c4
+Downloading layer: sha256:644eaeceac9ff6195008c1e20dd693346c35b0b65b9a90b3bcba18ea4bcef071
+Downloading layer: sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4
+Downloading layer: sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4
+Downloading layer: sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4
+Downloading layer: sha256:766692404ca72f4e31e248eb82f8eca6b2fcc15b22930ec50e3804cc3efe0aba
+Downloading layer: sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4
+Downloading layer: sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4
+Downloading layer: sha256:6a3d69edbe90ef916e1ecd8d197f056de873ed08bcfd55a1cd0b43588f3dbb9a
+Downloading layer: sha256:ff18e19c2db42055e6f34323700737bde3c819b413997cddace2c1b7180d7efd
+Downloading layer: sha256:7b9457ec39de00bc70af1c9631b9ae6ede5a3ab715e6492c0a2641868ec1deda
+Downloading layer: sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4
+Downloading layer: sha256:6a5a5368e0c2d3e5909184fa28ddfd56072e7ff3ee9a945876f7eee5896ef5bb
+Hello World: The Python version is 3.5.2
+</code></pre>
+</div>
+
+<h3 id="a-gpu-example">A GPU example</h3>
+<p>If your host system has an NVIDIA GPU card and a driver installed you can
+leverage the card with the <code class="highlighter-rouge">--nv</code> option.  (This example requires a fairly 
+recent version of the NVIDIA driver on the host system to run the latest 
+version of TensorFlow.</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ git clone https://github.com/tensorflow/models.git
+$ singularity exec --nv docker://tensorflow/tensorflow:latest-gpu \
+    python ./models/tutorials/image/mnist/convolutional.py
+Docker image path: index.docker.io/tensorflow/tensorflow:latest-gpu
+Cache folder set to /home/david/.singularity/docker
+[19/19] |===================================| 100.0%
+Creating container runtime...
+Extracting data/train-images-idx3-ubyte.gz
+Extracting data/train-labels-idx1-ubyte.gz
+Extracting data/t10k-images-idx3-ubyte.gz
+Extracting data/t10k-labels-idx1-ubyte.gz
+2017-08-18 20:33:59.677580: W tensorflow/core/platform/cpu_feature_guard.cc:45] The TensorFlow library wasn't compiled to use SSE4.1 instructions, but these are available on your machine and could speed up CPU computations.
+2017-08-18 20:33:59.677620: W tensorflow/core/platform/cpu_feature_guard.cc:45] The TensorFlow library wasn't compiled to use SSE4.2 instructions, but these are available on your machine and could speed up CPU computations.
+2017-08-18 20:34:00.148531: I tensorflow/stream_executor/cuda/cuda_gpu_executor.cc:893] successful NUMA node read from SysFS had negative value (-1), but there must be at least one NUMA node, so returning NUMA node zero
+2017-08-18 20:34:00.148926: I tensorflow/core/common_runtime/gpu/gpu_device.cc:955] Found device 0 with properties:
+name: GeForce GTX 760 (192-bit)
+major: 3 minor: 0 memoryClockRate (GHz) 0.8885
+pciBusID 0000:03:00.0
+Total memory: 2.95GiB
+Free memory: 2.92GiB
+2017-08-18 20:34:00.148954: I tensorflow/core/common_runtime/gpu/gpu_device.cc:976] DMA: 0
+2017-08-18 20:34:00.148965: I tensorflow/core/common_runtime/gpu/gpu_device.cc:986] 0:   Y
+2017-08-18 20:34:00.148979: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1045] Creating TensorFlow device (/gpu:0) -&gt; (device: 0, name: GeForce GTX 760 (192-bit), pci bus id: 0000:03:00.0)
+Initialized!
+Step 0 (epoch 0.00), 21.7 ms
+Minibatch loss: 8.334, learning rate: 0.010000
+Minibatch error: 85.9%
+Validation error: 84.6%
+Step 100 (epoch 0.12), 20.9 ms
+Minibatch loss: 3.235, learning rate: 0.010000
+Minibatch error: 4.7%
+Validation error: 7.8%
+Step 200 (epoch 0.23), 20.5 ms
+Minibatch loss: 3.363, learning rate: 0.010000
+Minibatch error: 9.4%
+Validation error: 4.2%
+[...snip...]
+Step 8500 (epoch 9.89), 20.5 ms
+Minibatch loss: 1.602, learning rate: 0.006302
+Minibatch error: 0.0%
+Validation error: 0.9%
+Test error: 0.8%
+</code></pre>
+</div>
+
+
+    <!-- More navigation on the bottom -->
+    <div class="row" style="padding-top:30px; margin-bottom:10px"><div class="col-md-12">
+        <a href="#"><button style="width:20%; height: 70px; float:left" class="hidden previous-button btn btn-lg btn-default">Previous</button></a>
+        <a href="#"><button style="width:20%; height: 70px; float:right" class="hidden next-button btn btn-lg btn-default">Next</button></a>
+    </div></div>
+
+
+    
+
+    
+
+    <a style="margin-top:10px;margin-bottom:10px" target="_blank" href="https://github.com/singularityware/singularityware.github.io/blob/master/pages/_pages/docs/docs-exec.md" class="btn btn-default btn-xs githubEditButton" role="button"><i class="fa fa-github fa-lg"></i> Edit me</a>
+    
+
+    
+
+    <div class="tags">
+        
+    </div>
+
+    
+
+</div>
+
+<hr class="shaded"/>
+
+<footer>
+            <div class="row">
+
+               <!-- Social Media links, etc -->
+               <div class="col-lg-6 footer">
+               
+    <a class="no-after social-icon" href="https://twitter.com/SingularityApp">
+      <i class="fa fa-4x fa-twitter no-after"></i>
+    </a>
+
+
+    <a class="no-after social-icon" href="https://github.com/singularityware">
+      <i class="fa fa-4x fa-github no-after"></i>
+    </a>
+
+
+
+               </div>
+
+                <div class="col-lg-6 footer">
+<p><img src="images/logo/logo.png" alt="Company logo" style="width:40px;padding-bottom:10px"/></p>
+ Site last generated: Oct 12, 2017 <br />
+                </div>
+            </div>
+</footer>
+
+
+    </div>
+    <!-- /.row -->
+</div>
+<!-- /.container -->
+    </div>
+
+</body>
+
+<!-- the google_analytics_id gets auto inserted from the config file -->
+
+
+
+<script>(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)})(window,document,'script','//www.google-analytics.com/analytics.js','ga');ga('create','UA-84672381-1','auto');ga('require','displayfeatures');ga('send','pageview');</script>
+
+
+</html>

@@ -1,0 +1,423 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+    <channel>
+        <title></title>
+        <description>Singularity allows a non-privileged user to 'swap out' the operating system on the host for one they control. So if the host system is running RHEL6 but your application runs in Ubuntu, you can create an Ubuntu image, install your applications into that image, copy the image to another host, and run your application on that host in it's native Ubuntu environment! Singularity also allows you to leverage the resources of whatever host you are on. This includes HPC interconnects, resource managers, file systems, GPUs and/or accelerators, etc.</description>
+        <link>http://localhost:4005/</link>
+        <atom:link href="http://localhost:4005/feed.xml" rel="self" type="application/rss+xml"/>
+        <pubDate>Thu, 12 Oct 2017 12:19:14 -0700</pubDate>
+        <lastBuildDate>Thu, 12 Oct 2017 12:19:14 -0700</lastBuildDate>
+        <generator>Jekyll v3.4.3</generator>
+        
+        <item>
+            <title>Singularity 2.4 Release</title>
+            <description>&lt;p&gt;Singularity 2.4 is released, and here are the important notes for you to know about!&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/img/posts/releases/singularity-egg-easy.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Singularity Build&lt;/strong&gt;
+Building an image is now more intuitive with the introduction of our &lt;code class=&quot;highlighter-rouge&quot;&gt;build&lt;/code&gt; command. You don’t need to worry about using &lt;code class=&quot;highlighter-rouge&quot;&gt;create&lt;/code&gt;, or &lt;code class=&quot;highlighter-rouge&quot;&gt;bootstrap&lt;/code&gt;, you just build. It looks like this:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;sudo singularity build container.simg Singularity
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;If you are tired of needing to estimate your image size, that issue goes away with build. The default format for a Singularity image base is now a smaller, compressed file format called &lt;strong&gt;SquashFS&lt;/strong&gt;.  This format is also a much better fit for reproducible containers, as it is immutable. For more details, see our &lt;a href=&quot;/docs-build-container&quot;&gt;build&lt;/a&gt; documentation.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Build Bases&lt;/strong&gt;
+We originally supported just using an existing distribution package or docker as a base for building images. With 2.4, we have extended that set to include another Singularity image (&lt;code class=&quot;highlighter-rouge&quot;&gt;localimage&lt;/code&gt;), or a Singularity Hub or Registry image (&lt;code class=&quot;highlighter-rouge&quot;&gt;shub&lt;/code&gt;).&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Instance Support&lt;/strong&gt;
+Singularity now has support for instances, which means services! Images instances can be started, stopped, and listed. Along with instances comes &lt;strong&gt;Network Namespace Isolation&lt;/strong&gt;. We are excited to see the kinds of use cases that this will afford for our users.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Singularity Registry&lt;/strong&gt;
+If you want to host your own Registry, we listened and you are in luck! Singularity &lt;a href=&quot;https://www.github.com/singularityhub/sregistry&quot;&gt;Registry&lt;/a&gt; is ready for your use, along with a &lt;a href=&quot;https://singularityhub.github.io/containers&quot;&gt;portal&lt;/a&gt; for you to “register your registry” to make it easier to share your images. Singularity Hub, along with improved building and updated builders, will follow this release.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Internal Modularity&lt;/strong&gt;
+This release includes support for the &lt;a href=&quot;/docs-apps&quot;&gt;Standard Container Integration Format (SCI-F)&lt;/a&gt; that makes it easy for you to produce single, internally modular and programmatically discoverage containers. More information is provided on it’s &lt;a href=&quot;https://containers-ftw.github.io/SCI-F/&quot;&gt;main site&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Better Documentation&lt;/strong&gt;
+We’ve added an entire page on the different customizations you can do to the &lt;a href=&quot;/build-environment&quot;&gt;build environment&lt;/a&gt;, including changing the cache and specifying credentials for Docker. We now also have new sidebars for the Image and Instances command groups.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Deprecated&lt;/strong&gt;
+We are deprecating the original &lt;code class=&quot;highlighter-rouge&quot;&gt;create&lt;/code&gt; command to be replaced with &lt;code class=&quot;highlighter-rouge&quot;&gt;image.create&lt;/code&gt;, along with &lt;code class=&quot;highlighter-rouge&quot;&gt;bootstrap&lt;/code&gt; in favor with build. These commands will still work for 2.4, however we recommend you start testing the updated ones.&lt;/p&gt;
+
+&lt;p&gt;In addition, here are some tiny changes for your information!&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Persistent Overlay&lt;/li&gt;
+  &lt;li&gt;Container checks&lt;/li&gt;
+  &lt;li&gt;Tests for instance support&lt;/li&gt;
+  &lt;li&gt;Wrapper for create&lt;/li&gt;
+  &lt;li&gt;Group instance commands&lt;/li&gt;
+  &lt;li&gt;Group image commands&lt;/li&gt;
+  &lt;li&gt;Bash completion updates&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;For the full release announcement and downloads, please see &lt;a target=&quot;_blank&quot; href=&quot;https://github.com/singularityware/singularity/releases/tag/2.4&quot;&gt;the release on Github&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;Wowee, way to go team, contributors, and the community! Please report any issues or questions that you might have to &lt;a href=&quot;https://github.com/singularityware/singularity/issues/new&quot; target=&quot;_blank&quot;&gt;our issue board&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;Thank you!&lt;/p&gt;
+</description>
+            <pubDate>Mon, 02 Oct 2017 00:00:00 -0700</pubDate>
+            <link>http://localhost:4005/release-2-4</link>
+            <guid isPermaLink="true">http://localhost:4005/release-2-4</guid>
+            
+            
+        </item>
+        
+        <item>
+            <title>Standard Container Integration Format (SCI-F) Final Draft</title>
+            <description>&lt;p&gt;Hi Singularity Community!&lt;/p&gt;
+
+&lt;p&gt;Thanks to everyone that provided comments on the early draft for SCI-F. The goals were initially:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;write specification draft (this was done via a Google Doc)&lt;/li&gt;
+  &lt;li&gt;implement into Singularity (now in &lt;a href=&quot;https://github.com/singularityware/singularityware.github.io/blob/docs/2.4/pages/docs/user-docs/docs-apps.md&quot;&gt;development branch&lt;/a&gt;)&lt;/li&gt;
+  &lt;li&gt;get feedback on both, adjust implementation and draft&lt;/li&gt;
+  &lt;li&gt;do several (N=4) implemented use cases for SCI-F, write up (&lt;a href=&quot;http://containers-ftw.org/apps/category/#Example&quot;&gt;available here&lt;/a&gt;)&lt;/li&gt;
+  &lt;li&gt;make an interactive, open source repository to contribute and share SCI-F apps &lt;a href=&quot;http://containers-ftw.org/apps/&quot;&gt;http://containers-ftw.org/apps/&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;write up the (almost) “final” draft formally &lt;a href=&quot;http://containers-ftw.org/SCI-F/&quot;&gt;http://containers-ftw.org/SCI-F/&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;I’m (&lt;code class=&quot;highlighter-rouge&quot;&gt;@vsoch&lt;/code&gt;) happy to report that I’ve finished the above, and I’d like to ask the following:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;if you contributed, please check the AUTHORS file in the SCI-F repository to make sure that I added you, and spelled your name correctly (apologies in advance).&lt;/li&gt;
+  &lt;li&gt;Any further suggestions, additions, or entire new contributions can be added to the draft by way of pull request. I’m not in any rush, and if you have a good contribution, I want to help.&lt;/li&gt;
+  &lt;li&gt;If you have not contributed yet and would like to, see the ideas linked on the &lt;a href=&quot;http://containers-ftw.org/SCI-F/&quot;&gt;draft abstract page&lt;/a&gt;.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;The plan is (as of now) to submit this no later than the end of October, and I want to make sure everyone that wants to contribute has had ample chance. Indeed, with Singularity there are many ways to cook your container, and SCi-F definitely exemplifies that.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/logo/three-ways.png&quot; alt=&quot;egg&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Thanks again everyone!&lt;/p&gt;
+
+</description>
+            <pubDate>Tue, 26 Sep 2017 00:00:00 -0700</pubDate>
+            <link>http://localhost:4005/2017-scif-contribute</link>
+            <guid isPermaLink="true">http://localhost:4005/2017-scif-contribute</guid>
+            
+            
+        </item>
+        
+        <item>
+            <title>Singularity 2.3.2 Quick Fix Release</title>
+            <description>&lt;p&gt;&lt;a target=&quot;_blank&quot; href=&quot;https://github.com/singularityware/singularity/releases/tag/2.3.2&quot;&gt;Release 2.3.2 &lt;/a&gt; This dot release includes a fix for a change that Docker implemented to their registry RESTful API which broke compatibility with Singularity (among several other low minor fixes).&lt;/p&gt;
+
+&lt;h2 id=&quot;what-happened&quot;&gt;What happened?&lt;/h2&gt;
+
+&lt;p&gt;&lt;strong&gt;Where does Docker image metadata come from?&lt;/strong&gt;
+The Docker Registry serves metadata about images via manifests, where each image has a manifest that tells Singularity important information like environment, labels, and entrypoints and running command. Importantly, the image manifest serves the actual layers that should be obtained to create the image. The manifests come in different flavors, or schema versions. Version 1 serves the primary load of metadata (labels, environment) while the first release of version 2 served layers, and had the addition of size. This addition made it possible to pull an image with Singularity and calculate the size on the fly for images generated with support for this manifest.&lt;/p&gt;
+
+&lt;p&gt;Singularity had an old default to retrieve the version 2 (done by way of a header asking for it), and ask it for layers. If the remote registry could only offer version 1, we were still able to obtain a list of layers (under a different key, &lt;code class=&quot;highlighter-rouge&quot;&gt;fsLayers&lt;/code&gt; instead of &lt;code class=&quot;highlighter-rouge&quot;&gt;layers&lt;/code&gt;) and metadata via the older (schema 1) manifest. However, with the update, the API version 2 schema can now return a &lt;a href=&quot;https://docs.docker.com/registry/spec/manifest-v2-2/#manifest-list&quot;&gt; list of manifests&lt;/a&gt;. This meant that when we checked the response for the keys &lt;code class=&quot;highlighter-rouge&quot;&gt;layers&lt;/code&gt; or &lt;code class=&quot;highlighter-rouge&quot;&gt;fslayers&lt;/code&gt;, they wouldn’t be found, becaues we needed to look under &lt;code class=&quot;highlighter-rouge&quot;&gt;manifests&lt;/code&gt;, and then do a second call to retrieve the manifest of interest based on a system architecture and OS. This of course broke most &lt;code class=&quot;highlighter-rouge&quot;&gt;import&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;shell&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;pull&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;exec&lt;/code&gt;, because all of these commands require retrieving the layers.&lt;/p&gt;
+
+&lt;h2 id=&quot;the-patch&quot;&gt;The Patch&lt;/h2&gt;
+&lt;p&gt;A super quick fix would have been to fall back to the version 1 manifest, always, but then we would lose the automatic calculation of size, which is important to many users. The “better” fix is obvious - the code needs to:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;check for a &lt;code class=&quot;highlighter-rouge&quot;&gt;manifests&lt;/code&gt; key&lt;/li&gt;
+  &lt;li&gt;if found, select a default manifest to use&lt;/li&gt;
+  &lt;li&gt;retrieve it, and continue!&lt;/li&gt;
+  &lt;li&gt;if not found, fall back to version 1&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;This means that we’ve added environment variables &lt;code class=&quot;highlighter-rouge&quot;&gt;SINGULARITY_DOCKER_OS&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;SINGULARITY_DOCKER_ARCHITECTURE&lt;/code&gt; to specify this choice, with defaults &lt;code class=&quot;highlighter-rouge&quot;&gt;linux&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;amd64&lt;/code&gt;. This is a pretty exciting change, because it means down the line you (as a user!) can specify the specifics of the layers you want returned, given an image that has this metadata available. We can see the fix running as follows:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;DEBUG 
+*** STARTING DOCKER IMPORT PYTHON  ****
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;p&gt;This is the initialization of the Docker client, it’s parsing the image name provided&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;DEBUG Starting Docker IMPORT, includes env, runscript, and metadata.
+VERBOSE Docker image: ubuntu:14.04
+VERBOSE2 Specified Docker ENTRYPOINT as %runscript.
+DEBUG Headers found: Content-Type,Accept
+VERBOSE Registry: index.docker.io
+VERBOSE Namespace: library
+VERBOSE Repo Name: ubuntu
+VERBOSE Repo Tag: 14.04
+VERBOSE Version: None
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;p&gt;The initial poke to Docker hub asks for tags, to determine if we need some kind of token&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;VERBOSE Obtaining tags: https://index.docker.io/v2/library/ubuntu/tags/list
+DEBUG GET https://index.docker.io/v2/library/ubuntu/tags/list
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;401 means that we do, and with the response the API sends back the scope and other details we need to make to request it&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;DEBUG Http Error with code 401
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Here we are requesting it&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;DEBUG GET https://auth.docker.io/token?service=registry.docker.io&amp;amp;expires_in=9000&amp;amp;scope=repository:library/ubuntu:pull
+DEBUG Headers found: Content-Type,Authorization,Accept
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;And here is the new bit. Instead of blindly doing one call, we have a function to update two versions of the manifest - the older (with metadata) and some version of the newer (with layers and size) with a fallback to use the version 1&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;DEBUG Updating manifests.
+
+# Here is version 2+
+DEBUG MANIFEST (Primary): not found, making initial call.
+VERBOSE Obtaining manifest: https://index.docker.io/v2/library/busybox/manifests/latest
+DEBUG GET https://index.docker.io/v2/library/busybox/manifests/latest
+
+# Here is version 1 (Metadata)
+DEBUG MANIFEST (Metadata): not found, making initial call.
+VERBOSE Obtaining manifest: https://index.docker.io/v2/library/busybox/manifests/latest
+DEBUG GET https://index.docker.io/v2/library/busybox/manifests/latest
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;p&gt;Notice that the two calls are the same - that’s because the headers are actually different, to request different ones.&lt;/p&gt;
+
+&lt;p&gt;And here is the (new) indication that we found a list&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;DEBUG Image manifest version 2.2 list found.
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;p&gt;Here is the default architecture / os&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;DEBUG Obtaining architecture: amd64, OS: linux
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;p&gt;And the specific call to get it&lt;/p&gt;
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;VERBOSE Obtaining manifest: https://index.docker.io/v2/library/busybox/manifests/sha256:030fcb92e1487b18c974784dcc110a93147c9fc402188370fbfd17efabffc6af
+DEBUG GET https://index.docker.io/v2/library/busybox/manifests/sha256:030fcb92e1487b18c974784dcc110a93147c9fc402188370fbfd17efabffc6af
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;With this fix - we can again use &lt;code class=&quot;highlighter-rouge&quot;&gt;pull&lt;/code&gt;/&lt;code class=&quot;highlighter-rouge&quot;&gt;import&lt;/code&gt;, etc, and also have a working &lt;code class=&quot;highlighter-rouge&quot;&gt;singularity pull docker://busybox&lt;/code&gt; that estimates the size automatically.&lt;/p&gt;
+
+&lt;p&gt;Please report any additional bugs to &lt;a target=&quot;_blank&quot; href=&quot;https://github.com/singularityware/singularity/issues/new&quot;&gt;our issues board.&lt;/a&gt;&lt;/p&gt;
+</description>
+            <pubDate>Fri, 15 Sep 2017 00:00:00 -0700</pubDate>
+            <link>http://localhost:4005/release-2-3-2</link>
+            <guid isPermaLink="true">http://localhost:4005/release-2-3-2</guid>
+            
+            
+        </item>
+        
+        <item>
+            <title>Announcement: Problem downloading from Docker Hub to be resolved soon</title>
+            <description>&lt;p&gt;To all Singularity users,&lt;/p&gt;
+
+&lt;p&gt;On Tuesday September 12, Docker released a new version of Docker image metadata.  This means that any new images built on Docker Hub cannot currently be downloaded using a singularity &lt;code class=&quot;highlighter-rouge&quot;&gt;pull&lt;/code&gt; or other commands like &lt;code class=&quot;highlighter-rouge&quot;&gt;shell&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;exec&lt;/code&gt;, and &lt;code class=&quot;highlighter-rouge&quot;&gt;bootstrap&lt;/code&gt; when updated Docker registries are queried.&lt;/p&gt;
+
+&lt;p&gt;Vanessa (&lt;code class=&quot;highlighter-rouge&quot;&gt;@v&lt;/code&gt;) has created an interim fix for the problem and we have merged it into the development branch.  Pending further testing we plan to merge this fix into master and create a new minor release (2.3.2).  We will make another announcement as soon as it is ready to install.&lt;/p&gt;
+
+&lt;p&gt;Thanks for your patience!&lt;/p&gt;
+
+&lt;p&gt;The Singularity team&lt;/p&gt;
+
+</description>
+            <pubDate>Wed, 13 Sep 2017 00:00:00 -0700</pubDate>
+            <link>http://localhost:4005/2017-docker-problem</link>
+            <guid isPermaLink="true">http://localhost:4005/2017-docker-problem</guid>
+            
+            
+        </item>
+        
+        <item>
+            <title>Singularity 2.3.1 Security Release</title>
+            <description>&lt;p&gt;&lt;a target=&quot;_blank&quot; href=&quot;https://github.com/singularityware/singularity/releases/tag/2.3.1&quot;&gt;This release&lt;/a&gt; includes a fix for a High Severity security issue on older hosts, and other improvements and fixes to previous versions of Singularity.&lt;/p&gt;
+
+&lt;h2 id=&quot;security-information&quot;&gt;Security Information:&lt;/h2&gt;
+
+&lt;p&gt;A potential escalation pathway was identified that could have allowed a malicious user to escalate their privileges on hosts that do not support the &lt;code class=&quot;highlighter-rouge&quot;&gt;PR_SET_NO_NEW_PRIVS&lt;/code&gt; flag for the &lt;code class=&quot;highlighter-rouge&quot;&gt;prctl()&lt;/code&gt; system call. This release fixes this as well as several other identified bugs and potential race conditions.&lt;/p&gt;
+
+&lt;p&gt;Please report any additional bugs to &lt;a target=&quot;_blank&quot; href=&quot;https://github.com/singularityware/singularity/issues/new&quot;&gt;our issues board.&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;Thanks to the hard work of all our contributers to nail this bug in the butt!&lt;/p&gt;
+</description>
+            <pubDate>Mon, 26 Jun 2017 00:00:00 -0700</pubDate>
+            <link>http://localhost:4005/release-2-3-1</link>
+            <guid isPermaLink="true">http://localhost:4005/release-2-3-1</guid>
+            
+            
+        </item>
+        
+        <item>
+            <title>Singularity in Cloud Computing Chapter</title>
+            <description>&lt;p&gt;&lt;a href=&quot;https://www.linkedin.com/pulse/containers-hpc-look-singularity-dennis-gannon&quot; target=&quot;_blank&quot;&gt;Dennis Gannon&lt;/a&gt; 
+and Vanessa Sochat have recently completed a little study of Singularity as a supplementary chapter to the book “Cloud Computing for Science and Engineering” that is being published by MIT Press. The cloud is reported to be happy about this.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/img/posts/graphics/singularity-cloud.png&quot; style=&quot;width:500px;float:right&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;You can see the chapter on &lt;a href=&quot;https://cloud4scieng.org/singularity-a-container-system-for-hpc-applications/&quot; target=&quot;_blank&quot;&gt;cloud4scieng.org&lt;/a&gt;, and we highly recommend perusing the entire &lt;a href=&quot;https://cloud4scieng.org/chapters/&quot; target=&quot;_blank&quot;&gt;selection of chapters&lt;/a&gt; for the book.&lt;/p&gt;
+
+</description>
+            <pubDate>Mon, 26 Jun 2017 00:00:00 -0700</pubDate>
+            <link>http://localhost:4005/2017-mit-chapter</link>
+            <guid isPermaLink="true">http://localhost:4005/2017-mit-chapter</guid>
+            
+            
+        </item>
+        
+        <item>
+            <title>Singularity on the Open Science Grid</title>
+            <description>&lt;p&gt;Can you imagine millions of containers, flying at hyperspeed across the continental grid for science? That’s not so far from the vision of the Open Science Grid. One of the members of the OSG, FabrIc for Frontier Experiments (FIFE), has &lt;a href=&quot;http://fife.fnal.gov/singularity-on-the-osg/&quot; target=&quot;_blank&quot;&gt;written an article&lt;/a&gt; about how Singularity containers can be used on the OSG resources. &lt;a href=&quot;http://fife.fnal.gov/singularity-on-the-osg/&quot; target=&quot;_blank&quot;&gt;Check it out here&lt;/a&gt;, and remember, the next time you see something flying in the sky, you might want to add “container” to your list with bird and plane.&lt;/p&gt;
+
+</description>
+            <pubDate>Mon, 19 Jun 2017 00:00:00 -0700</pubDate>
+            <link>http://localhost:4005/2017-singularity-osg</link>
+            <guid isPermaLink="true">http://localhost:4005/2017-singularity-osg</guid>
+            
+            
+        </item>
+        
+        <item>
+            <title>Dolmades: Windows Apps under Linux using Singularity</title>
+            <description>&lt;h2 id=&quot;introduction&quot;&gt;Introduction&lt;/h2&gt;
+&lt;p&gt;Recently I’ve found several reasons why Windows containers fit in nicely in our Linux-dominated environments:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;You actually do have &lt;a href=&quot;https://github.com/CHPC-UofU/Singularity-ubuntu-wine-peakselector&quot; target=&quot;_blank&quot;&gt; a scientific application&lt;/a&gt; which is exclusively available for windows&lt;/li&gt;
+  &lt;li&gt;How about installing and running MS Office inside a safe environment?&lt;/li&gt;
+  &lt;li&gt;Do you own Windows games you always wanted to play under Linux?&lt;/li&gt;
+  &lt;li&gt;Your tax reporting software runs under Windows only?&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;That’s why I initiated a project called &lt;a href=&quot;http://dolmades.org&quot; target=&quot;_blank&quot;&gt;dolmades&lt;/a&gt; which should bring portable and sustainable windows applications to linux users.
+Its goal is to provide stable recipes for people who are interested in regularily using one or only a few particular windows application. 
+For that purpose VMs and dual-booting bear a huge overhead in both performance and ressources.
+Another approach is to use &lt;a href=&quot;https://winehq.org&quot; target=&quot;_blank&quot;&gt;wine&lt;/a&gt;, a wrapper that redirects Windows system calls into native Linux system calls and allows execution of native Windows binaries under supported platforms (Unix with X, just recently Android).&lt;/p&gt;
+
+&lt;p&gt;So, why don’t we formulate the following equation: wine + singularity = dolmades ?&lt;/p&gt;
+
+&lt;h2 id=&quot;about&quot;&gt;About&lt;/h2&gt;
+&lt;p&gt;This document describes how to get a dolmade running in which one or several windows apps can be installed temporarily or permanently. 
+Both a Singularity Hub and a Docker Hub image template is readily available and supports plenty of win apps already without further modification needed.&lt;/p&gt;
+
+&lt;h2 id=&quot;requirements&quot;&gt;Requirements&lt;/h2&gt;
+&lt;p&gt;This tutorial uses singularity 2.3 which is all what you will need to have installed. 
+The game which is being installed is freely downloadable.
+Normal user privileges will suffice provided you install your software into the proper location.&lt;/p&gt;
+
+&lt;h2 id=&quot;example-dolmade&quot;&gt;Example Dolmade&lt;/h2&gt;
+&lt;p&gt;Let’s pull the dolmades docker image. Alternatively, you can use the shub image.&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;singularity pull docker://c1t4r/dolmades 
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;This image comes with Ubuntu 16.04 and has the winehq PPA enabled. 
+It has wine version 2.0.1 (current stable) installed and some additional packages which are needed
+to run some DX9 games.&lt;/p&gt;
+
+&lt;p&gt;Now, extend the size of the image and execute its run script in read-write mode:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;singularity expand -s 1500 dolmades.img
+singularity exec -w dolmades.img /singularity
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;This will do the following in &lt;code class=&quot;highlighter-rouge&quot;&gt;/tmp&lt;/code&gt;:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Check if a wine prefix exists from a previous run? If yes: restore it, if no: initialize it. 
+The wine prefix is kind of a chroot location for wine apps and where the windows user profiles and their apps are being stored.&lt;/li&gt;
+  &lt;li&gt;Download and install DirectX9&lt;/li&gt;
+  &lt;li&gt;Start a new shell&lt;/li&gt;
+  &lt;li&gt;Prints the instructions to manually download and install Broken Sword 2.5 (a nice, free adventure game)&lt;/li&gt;
+  &lt;li&gt;After you are done, test it and finally exit the shell.&lt;/li&gt;
+  &lt;li&gt;The profile will be saved under &lt;code class=&quot;highlighter-rouge&quot;&gt;/PROFILES&lt;/code&gt;, the game under &lt;code class=&quot;highlighter-rouge&quot;&gt;/APPS&lt;/code&gt;.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;&lt;strong&gt;&lt;em&gt;NOTE:&lt;/em&gt;&lt;/strong&gt; it is important to call the EXE from its directory or else it will fail!&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;wine ./bsengine.exe 
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Expand the size of your container further or use a new one to try out other windows games or apps!&lt;/p&gt;
+
+&lt;p&gt;If you are unsure if an app will install or work properly you can test that without modifying the container. 
+Simply start it read-only:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;./dolmades.img # or singularity run dolmades.img 
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Once you have figured out how to install and make an app work you repeat the steps in rw-mode.
+Often, some registry entries need to be tweaked or some builtin DLLs substituted by native ones.&lt;/p&gt;
+
+&lt;p&gt;That can be often done using the tool &lt;code class=&quot;highlighter-rouge&quot;&gt;winetricks&lt;/code&gt;. Some more settings can be tweaked using the tool &lt;code class=&quot;highlighter-rouge&quot;&gt;winecfg&lt;/code&gt;.&lt;/p&gt;
+
+&lt;h2 id=&quot;resources&quot;&gt;Resources&lt;/h2&gt;
+
+&lt;p&gt;This is the &lt;code class=&quot;highlighter-rouge&quot;&gt;Dockerfile&lt;/code&gt; to build the dolmades docker image&lt;/p&gt;
+&lt;style&gt;
+/* Better styles for embedding GitHub Gists */
+.gist{font-size:13px;line-height:20px;margin-bottom:20px;width:100%}
+.gist pre{font-family:Menlo,Monaco,'Bitstream Vera Sans Mono','Courier New',monospace !important}
+.gist-meta{font-family:Helvetica,Arial,sans-serif;font-size:13px !important}
+.gist-meta a{color:#26a !important;text-decoration:none}
+.gist-meta a:hover{color:#0e4071 !important}
+&lt;/style&gt;
+
+&lt;script src=&quot;https://gist.github.com/katakombi/6ce5690804beefaeb83abe2f3c946b08.js?file=Dockerfile&quot;&gt;&lt;/script&gt;
+
+&lt;p&gt;This is the &lt;a href=&quot;https://raw.githubusercontent.com/katakombi/dolmades/master/Singularity&quot; target=&quot;_blank&quot;&gt;link&lt;/a&gt; to the singularity hub dolmades build spec file which also contains the run script.&lt;/p&gt;
+
+&lt;p&gt;Dolmades are still in the early stages and there are many challenges to tackle before we seize the potential over using wine on Linux systems directly.
+If this speaks to you then send me your feedback or questions, and check my &lt;a href=&quot;http://dolmades.org&quot;&gt;project page&lt;/a&gt; for screen shots of further examples.&lt;/p&gt;
+</description>
+            <pubDate>Fri, 02 Jun 2017 00:00:00 -0700</pubDate>
+            <link>http://localhost:4005/dolmades-windows-containers</link>
+            <guid isPermaLink="true">http://localhost:4005/dolmades-windows-containers</guid>
+            
+            
+        </item>
+        
+        <item>
+            <title>Singularity 2.3 Release</title>
+            <description>&lt;p&gt;We have some egg-citing news! It’s the release of Singularity 2.3!&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/img/posts/releases/singularity-egg.png&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;For the full release announcement and downloads, please see &lt;a target=&quot;_blank&quot; href=&quot;https://github.com/singularityware/singularity/releases/tag/2.3&quot;&gt;the release on Github&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;There are a massive number of fixes, updates, optimizations and awesomeness contained within this release, and here are the major ones, in a nutshell:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Lots of backend library changes to accommodate a more flexible API&lt;/li&gt;
+  &lt;li&gt;Restructured Python backend&lt;/li&gt;
+  &lt;li&gt;Updated bootstrap backend to make it much more reliable&lt;/li&gt;
+  &lt;li&gt;Direct support for Singularity-Hub&lt;/li&gt;
+  &lt;li&gt;Ability to run additional commands without root privileges (e.g. create, import, copy, export, etc..).&lt;/li&gt;
+  &lt;li&gt;Added ability to pull images from Singularity Hub and Docker&lt;/li&gt;
+  &lt;li&gt;Containers now have labels, and are inspect’able&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;We are excited about the release, and grateful to the community and all contributors. Have fun, egglings! Please report any additional bugs &lt;a href=&quot;https://github.com/singularityware/singularity/issues/new&quot; target=&quot;_blank&quot;&gt;as issues&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;Thank you!&lt;/p&gt;
+</description>
+            <pubDate>Wed, 31 May 2017 00:00:00 -0700</pubDate>
+            <link>http://localhost:4005/release-2-3</link>
+            <guid isPermaLink="true">http://localhost:4005/release-2-3</guid>
+            
+            
+        </item>
+        
+        <item>
+            <title>The Next Platform: Singularity is the Hinge To Swing HPC Cloud Adoption</title>
+            <description>&lt;p&gt;&lt;a href=&quot;https://www.nextplatform.com&quot; target=&quot;_blank&quot;&gt;The Next Platform&lt;/a&gt; has written an article on how Singularity is enabling HPC based workflows to easily be transitioned to cloud based computing providers! &lt;a href=&quot;http://pod.penguincomputing.com&quot; target=&quot;_blank&quot;&gt;Penguin Computing’s POD service&lt;/a&gt; is leveraging Singularity to help with the transition of local resources to cloud based resources.&lt;/p&gt;
+
+&lt;p&gt;Read about the details in the original article here: &lt;a href=&quot;https://www.nextplatform.com/2017/05/18/singularity-hinge-swing-hpc-cloud-adoption/&quot; target=&quot;_blank&quot;&gt;https://www.nextplatform.com/2017/05/18/singularity-hinge-swing-hpc-cloud-adoption/&lt;/a&gt;&lt;/p&gt;
+
+</description>
+            <pubDate>Thu, 18 May 2017 00:00:00 -0700</pubDate>
+            <link>http://localhost:4005/2017-nextplatform-singularity-hpc-cloud</link>
+            <guid isPermaLink="true">http://localhost:4005/2017-nextplatform-singularity-hpc-cloud</guid>
+            
+            
+        </item>
+        
+    </channel>
+</rss>

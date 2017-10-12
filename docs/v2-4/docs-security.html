@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<meta name="description" content="   Security   These docs are for Singularity Version 2.4. For older versions, see our archive                                                 Container security paradigmsFirst some background. Most container platforms operate on the premise, trusted users running trusted containers. This means that the primary UNIX account controlling the container platform is either “root” or user(s) that root has deputized (either via sudo or given access to a control socket of a root owned daemon process).Singularity on the other hand, operates on a different premise because it was developed for HPC type infrastructures where you have users, none of which are considered trusted. This means the paradigm is considerably different as we must support untrusted users running untrusted containers.Untrusted users running untrusted containers!This simple phrase describes the security perspective Singularity is designed with. And if you additionally consider the fact that running containers at all typically requires some level of privilege escalation, means that attention to security is of the utmost importance.Privilege escalation is necessary for containerization!As mentioned, there are several containerization system calls and functions which are considered “privileged” in that they must be executed with a certain level of capability/privilege. To do this, all container systems must employ one of the following mechanisms:  Limit usage to root: Only allow the root user (or users granted sudo) to run containers. This has the obvious limitation of not allowing arbitrary users the ability to run containers, nor does it allow users to run containers as themselves. Access to data, security data, and securing systems becomes difficult and perhaps impossible.          Root owned daemon process: Some container systems use a root owned daemon background process which manages the containers and spawns the jobs within the container. Implementations of this typically have an IPC control socket for communicating with this root owned daemon process and if you wish to allow trusted users to control the daemon, you must give them access to the control socket. This is the Docker model.      SetUID: Set UID is the “old school” UNIX method for running a particular program with escalated permission. While it is widely used due to it’s legacy and POSIX requirement, it lacks the ability to manage fine grained control of what a process can and can not do; a SetUID root program runs as root with all capabilities that comes with root. For this reason, SetUID programs are traditional targets for hackers.      User Namespace: The Linux kernel’s user namespace may allow a user to virtually become another user and run a limited set privileged system functions. Here the privilege escalation is managed via the Linux kernel which takes the onus off of the program. This is a new kernel feature and thus requires new kernels and not all distributions have equally adopted this technology.      Capability Sets: Linux handles permissions, access, and roles via capability sets. The root user has these capabilities automatically activated while non-privileged users typically do not have these capabilities enabled. You can enable and disable capabilities on a per process and per file basis (if allowed to do so).      How does Singularity do it?Singularity must allow users to run containers as themselves which rules out options 1 and 2 from the above list. Singularity supports the rest of the options to following degrees of functionally:  User Namespace: Singularity supports the user namespace natively and can run completely unprivileged (“rootless”) since version 2.2 (October 2016) but features are severely limited. You will not be able to use container “images” and will be forced to only work with directory (sandbox) based containers. Additionally, as mentioned, the user namespace is not equally supported on all distribution kernels so don’t count on legacy system support and usability may vary.  SetUID: This is the default usage model for Singularity because it gives the most flexibility in terms of supported features and legacy compliance. It is also the most risky from a security perspective. For that reason, Singularity has been developed with transparency in mind. The code is written with attention to simplicity and readability and Singularity increases the effective permission set only when it is necessary, and drops it immediately (as can be seen with the --debug run flag). There have been several independent audits of the source code, and while they are not definitive, it is a good assurance.  Capability Sets: This is where Singularity is headed as an alternative to SetUID because it allows for much finer grained capability control and will support all of Singularity’s features. The downside is that it is not supported equally on shared file systems.Where are the Singularity privileged componentsWhen you install Singularity as root, it will automatically setup the necessary files as SetUID (as of version 2.4, this is the default run mode). The location of these files is dependent on how Singularity was installed and the options passed to the configure script. Assuming a default ./configure run which installs files into --prefix of /usr/local you can find the SetUID programs as follows:$ find /usr/local/libexec/singularity/ -perm -4000/usr/local/libexec/singularity/bin/start-suid/usr/local/libexec/singularity/bin/action-suid/usr/local/libexec/singularity/bin/mount-suidEach of the binaries is named accordingly to the action that it is suited for, and generally, each handles the required privilege escalation necessary for Singularity to operate. What specifically requires escalated privileges?  Mounting (and looping) the Singularity container image  Creation of the necessary namespaces in the kernel  Binding host paths into the containerRemoving any of these SUID binaries or changing the permissions on them would cause Singularity to utilize the non-SUID workflows. Each file with *-suid also has a non-suid equivalent:/usr/local/libexec/singularity/bin/start/usr/local/libexec/singularity/bin/action/usr/local/libexec/singularity/bin/mountWhile most of these workflows will not properly function without the SUID components, we have provided these fall back executables for sites that wish to limit the SETUID capabilities to the bare essentials/minimum. To disable the SetUID portions of Singularity, you can either remove the above *-suid files, or you can edit the setting for allow suid at the top of the singularity.conf file, which is typically located in $PREFIX/etc/singularity/singularity.conf.# ALLOW SETUID: [BOOL]# DEFAULT: yes# Should we allow users to utilize the setuid program flow within Singularity?# note1: This is the default mode, and to utilize all features, this option# will need to be enabled.# note2: If this option is disabled, it will rely on the user namespace# exclusively which has not been integrated equally between the different# Linux distributions.allow setuid = yesYou can also install Singularity as root without any of the SetUID components with the configure option --disable-suid as follows:$ ./configure --disable-suid --prefix=/usr/local$ make$ sudo make installCan I install Singularity as a user?Yes, but don’t expect all of the functions to work. If the SetUID components are not present, Singularity will attempt to use the “user namespace”. Even if the kernel you are using supports this namespace fully, you will still not be able to access all of the Singularity features.Container permissions and usage strategyAs a system admin, you want to set up a configuration that is customized for your cluster or shared resource. In the following paragraphs, we will elaborate on this container permissions strategy, giving detail about which users are allowed to run containers, along with image curation and ownership.These settings can all be found in the Singularity configuration file which is installed to $PREFIX/etc/singularity/singularity.conf. When running in a privileged mode, the configuration file MUST be owned by root and thus the system administrator always has the final control.controlling what kind of containers are allowedSingularity supports several different container formats:  squashfs: Compressed immutable (read only) container images (default in version 2.4)  extfs: Raw file system writable container images  dir: Sandbox containers (chroot style directories)Using the Singularity configuration file, you can control what types of containers Singularity will support:# ALLOW CONTAINER ${TYPE}: [BOOL]# DEFAULT: yes# This feature limits what kind of containers that Singularity will allow# users to use (note this does not apply for root).allow container squashfs = yesallow container extfs = yesallow container dir = yeslimiting usage to specific container file ownersOne benefit of using container images is that they exist on the filesystem as any other file would. This means that POSIX permissions are mandatory. Here you can configure Singularity to only “trust” containers that are owned by a particular set of users.# LIMIT CONTAINER OWNERS: [STRING]# DEFAULT: NULL# Only allow containers to be used that are owned by a given user. If this# configuration is undefined (commented or set to NULL), all containers are# allowed to be used. This feature only applies when Singularity is running in# SUID mode and the user is non-root.#limit container owners = gmk, singularity, nobodynote: If you are in a high risk security environment, you may want to enable this feature. Trusting container images to users could allow a malicious user to modify an image either before or while being used and cause unexpected behavior from the kernel (e.g. a DOS attack). For more information, please see: https://lwn.net/Articles/652468/limiting usage to specific pathsThe configuration file also gives you the ability to limit containers to specific paths. This is very useful to ensure that only trusted or blessed container’s are being used (it is also beneficial to ensure that containers are only being used on performant file systems).# LIMIT CONTAINER PATHS: [STRING]# DEFAULT: NULL# Only allow containers to be used that are located within an allowed path# prefix. If this configuration is undefined (commented or set to NULL),# containers will be allowed to run from anywhere on the file system. This# feature only applies when Singularity is running in SUID mode and the user is# non-root.#limit container paths = /scratch, /tmp, /globalLoggingSingularity offers a very comprehensive auditing mechanism via the system log. For each command that is issued, it prints the UID, PID, and location of the command. For example, let’s see what happens if we shell into an image:$ singularity exec ubuntu true$ singularity shell --home $HOME:/ ubuntuSingularity: Invoking an interactive shell within container...ERROR  : Failed to execv() /.singularity.d/actions/shell, continuing to /bin/sh: No such file or directoryERROR  : What are you doing gmk, this is highly irregular!ABORT  : Retval = 255We can then peek into the system log to see what was recorded:Oct  5 08:51:12 localhost Singularity: action-suid (U=1000,P=32320)&gt; USER=gmk, IMAGE='ubuntu', COMMAND='exec'Oct  5 08:53:13 localhost Singularity: action-suid (U=1000,P=32311)&gt; USER=gmk, IMAGE='ubuntu', COMMAND='shell'Oct  5 08:53:13 localhost Singularity: action-suid (U=1000,P=32311)&gt; Failed to execv() /.singularity.d/actions/shell, continuing to /bin/sh: No such file or directoryOct  5 08:53:13 localhost Singularity: action-suid (U=1000,P=32311)&gt; What are you doing gmk, this is highly irregular!Oct  5 08:53:13 localhost Singularity: action-suid (U=1000,P=32311)&gt; Retval = 255note: All errors are logged!A peek into the SetUID program flowWe can also add the --debug argument to any command itself at runtime to see everything that Singularity is doing. In this case we can run Singularity in debug mode and request use of the PID namespace so we can see what Singularity is doing there:$ singularity --debug shell --pid ubuntuEnabling debuggingEnding argument loopSingularity version: 2.3.9-development.gc35b753Exec'ing: /usr/local/libexec/singularity/cli/shell.execEvaluating args: '--pid ubuntu'(snipped to PID namespace implementation)DEBUG   [U=1000,P=30961]   singularity_runtime_ns_pid()              Using PID namespace: CLONE_NEWPIDDEBUG   [U=1000,P=30961]   singularity_runtime_ns_pid()              Virtualizing PID namespaceDEBUG   [U=1000,P=30961]   singularity_registry_get()                Returning NULL on 'DAEMON_START'DEBUG   [U=1000,P=30961]   prepare_fork()                            Creating parent/child coordination pipes.VERBOSE [U=1000,P=30961]   singularity_fork()                        Forking child processDEBUG   [U=1000,P=30961]   singularity_priv_escalate()               Temporarily escalating privileges (U=1000)DEBUG   [U=0,P=30961]      singularity_priv_escalate()               Clearing supplementary GIDs.DEBUG   [U=0,P=30961]      singularity_priv_drop()                   Dropping privileges to UID=1000, GID=1000 (8 supplementary GIDs)DEBUG   [U=0,P=30961]      singularity_priv_drop()                   Restoring supplementary groupsDEBUG   [U=1000,P=30961]   singularity_priv_drop()                   Confirming we have correct UID/GIDVERBOSE [U=1000,P=30961]   singularity_fork()                        Hello from parent processDEBUG   [U=1000,P=30961]   install_generic_signal_handle()           Assigning generic sigaction()sDEBUG   [U=1000,P=30961]   install_generic_signal_handle()           Creating generic signal pipesDEBUG   [U=1000,P=30961]   install_sigchld_signal_handle()           Assigning SIGCHLD sigaction()DEBUG   [U=1000,P=30961]   install_sigchld_signal_handle()           Creating sigchld signal pipesDEBUG   [U=1000,P=30961]   singularity_fork()                        Dropping permissionsDEBUG   [U=0,P=30961]      singularity_priv_drop()                   Dropping privileges to UID=1000, GID=1000 (8 supplementary GIDs)DEBUG   [U=0,P=30961]      singularity_priv_drop()                   Restoring supplementary groupsDEBUG   [U=1000,P=30961]   singularity_priv_drop()                   Confirming we have correct UID/GIDDEBUG   [U=1000,P=30961]   singularity_signal_go_ahead()             Sending go-ahead signal: 0DEBUG   [U=1000,P=30961]   wait_child()                              Parent process is waiting on child processDEBUG   [U=0,P=1]          singularity_priv_drop()                   Dropping privileges to UID=1000, GID=1000 (8 supplementary GIDs)DEBUG   [U=0,P=1]          singularity_priv_drop()                   Restoring supplementary groupsDEBUG   [U=1000,P=1]       singularity_priv_drop()                   Confirming we have correct UID/GIDVERBOSE [U=1000,P=1]       singularity_fork()                        Hello from child processDEBUG   [U=1000,P=1]       singularity_wait_for_go_ahead()           Waiting for go-ahead signalDEBUG   [U=1000,P=1]       singularity_wait_for_go_ahead()           Received go-ahead signal: 0VERBOSE [U=1000,P=1]       singularity_registry_set()                Adding value to registry: 'PIDNS_ENABLED' = '1'(snipped to end)DEBUG   [U=1000,P=1]       envar_set()                               Unsetting environment variable: SINGULARITY_APPNAMEDEBUG   [U=1000,P=1]       singularity_registry_get()                Returning value from registry: 'COMMAND' = 'shell'LOG     [U=1000,P=1]       main()                                    USER=gmk, IMAGE='ubuntu', COMMAND='shell'INFO    [U=1000,P=1]       action_shell()                            Singularity: Invoking an interactive shell within container...DEBUG   [U=1000,P=1]       action_shell()                            Exec'ing /.singularity.d/actions/shellSingularity ubuntu:~&gt; Not only do I see all of the configuration options that I (probably forgot about) previously set, I can trace the entire flow of Singularity from the first execution of an action (shell) to the final shell into the container. Each line also describes what is the effective UID running the command, what is the PID, and what is the function emitting the debug message.A peek into the “rootless” program flowThe above snippet was using the default SetUID program flow with a container image file named “ubuntu”. For comparison, if we also use the --userns flag, and snip in the same places, you can see how the effective UID is never escalated, but we have the same outcome using a sandbox directory (chroot) style container.$ singularity -d shell --pid --userns ubuntu.dir/Enabling debuggingEnding argument loopSingularity version: 2.3.9-development.gc35b753Exec'ing: /usr/local/libexec/singularity/cli/shell.execEvaluating args: '--pid --userns ubuntu.dir/'(snipped to PID namespace implementation, same place as above)DEBUG   [U=1000,P=32081]   singularity_runtime_ns_pid()              Using PID namespace: CLONE_NEWPIDDEBUG   [U=1000,P=32081]   singularity_runtime_ns_pid()              Virtualizing PID namespaceDEBUG   [U=1000,P=32081]   singularity_registry_get()                Returning NULL on 'DAEMON_START'DEBUG   [U=1000,P=32081]   prepare_fork()                            Creating parent/child coordination pipes.VERBOSE [U=1000,P=32081]   singularity_fork()                        Forking child processDEBUG   [U=1000,P=32081]   singularity_priv_escalate()               Not escalating privileges, user namespace enabledDEBUG   [U=1000,P=32081]   singularity_priv_drop()                   Not dropping privileges, user namespace enabledVERBOSE [U=1000,P=32081]   singularity_fork()                        Hello from parent processDEBUG   [U=1000,P=32081]   install_generic_signal_handle()           Assigning generic sigaction()sDEBUG   [U=1000,P=32081]   install_generic_signal_handle()           Creating generic signal pipesDEBUG   [U=1000,P=32081]   install_sigchld_signal_handle()           Assigning SIGCHLD sigaction()DEBUG   [U=1000,P=32081]   install_sigchld_signal_handle()           Creating sigchld signal pipesDEBUG   [U=1000,P=32081]   singularity_signal_go_ahead()             Sending go-ahead signal: 0DEBUG   [U=1000,P=32081]   wait_child()                              Parent process is waiting on child processDEBUG   [U=1000,P=1]       singularity_priv_drop()                   Not dropping privileges, user namespace enabledVERBOSE [U=1000,P=1]       singularity_fork()                        Hello from child processDEBUG   [U=1000,P=1]       singularity_wait_for_go_ahead()           Waiting for go-ahead signalDEBUG   [U=1000,P=1]       singularity_wait_for_go_ahead()           Received go-ahead signal: 0VERBOSE [U=1000,P=1]       singularity_registry_set()                Adding value to registry: 'PIDNS_ENABLED' = '1'(snipped to end)DEBUG   [U=1000,P=1]       envar_set()                               Unsetting environment variable: SINGULARITY_APPNAMEDEBUG   [U=1000,P=1]       singularity_registry_get()                Returning value from registry: 'COMMAND' = 'shell'LOG     [U=1000,P=1]       main()                                    USER=gmk, IMAGE='ubuntu.dir', COMMAND='shell'INFO    [U=1000,P=1]       action_shell()                            Singularity: Invoking an interactive shell within container...DEBUG   [U=1000,P=1]       action_shell()                            Exec'ing /.singularity.d/actions/shellSingularity ubuntu.dir:~&gt; whoamigmkSingularity ubuntu.dir:~&gt; Here you can see that the output and functionality is very similar, but we never increased any privilege and none of the *-suid program flow was utilized. We had to use a chroot style directory container (as images are not supported with the user namespace, but you can clearly see that the effective UID never had to change to run this container.note: Singularity can natively create and manage chroot style containers just like images! The above image was created using the command: singularity build ubuntu.dir docker://ubuntu:latestSummarySingularity supports multiple modes of operation to meet your security needs. For most HPC centers, and general usage scenarios, the default run mode is most effective and featurefull. For the security critical implementations, the user namespace workflow maybe a better option. It becomes a balance security and functionality (the most secure systems do nothing).                Previous        Next                 Edit me                                                                                                                                                 Site last generated: Oct 12, 2017                             ">
+
+
+<meta name="name" content="Security">
+
+<meta name="thumbnail" content="http://singularity.lbl.gov/images/logo/logo.svg">
+
+
+
+
+<title>Security | Singularity</title>
+<link rel="stylesheet" href="assets/css/syntax.css">
+
+
+<link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+<link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet">
+<!--<link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">-->
+<link rel="stylesheet" href="assets/css/modern-business.css">
+<link rel="stylesheet" href="assets/css/lavish-bootstrap.css">
+<link rel="stylesheet" href="assets/css/customstyles.css">
+<link rel="stylesheet" href="assets/css/theme-blue.css">
+
+<link rel="stylesheet" type="text/css" href="assets/css/asciinema-player.css" />
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.min.js"></script>
+<script src="assets/js/jquery.navgoco.min.js"></script>
+
+
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/anchor-js/2.0.0/anchor.min.js"></script>
+<script src="assets/js/toc.js"></script>
+<script src="assets/js/customscripts.js"></script>
+
+<link rel="shortcut icon" href="images/favicon/favicon.ico">
+
+<!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+<!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+<!--[if lt IE 9]>
+<script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+<script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+<![endif]-->
+
+<link rel="alternate" type="application/rss+xml" title="" href="http://localhost:4005feed.xml">
+
+    <script>
+        $(document).ready(function() {
+
+            // Initialize navgoco with default options
+            $("#mysidebar").navgoco({
+                caretHtml: '',
+                accordion: true,
+                openClass: 'active', // open
+                save: false, // leave false or nav highlighting doesn't work right
+                cookie: {
+                    name: 'navgoco',
+                    expires: false,
+                    path: '/'
+                },
+                slide: {
+                    duration: 400,
+                    easing: 'swing'
+                }
+            });
+
+            $("#collapseAll").click(function(e) {
+                e.preventDefault();
+                $("#mysidebar").navgoco('toggle', false);
+            });
+
+            $("#expandAll").click(function(e) {
+                e.preventDefault();
+                $("#mysidebar").navgoco('toggle', true);
+            });
+
+        });
+
+    </script>
+    <script>
+        $(function () {
+            $('[data-toggle="tooltip"]').tooltip()
+        })
+    </script>
+    
+
+</head>
+<body>
+<!-- asciinema player -->
+<script src="assets/js/asciinema-player.js"></script>
+
+<!-- Show or hide players on button clicks-->
+<script>
+$( document ).ready(function() {
+    $(".asciinema-button").click(function(){
+        console.log('rawwwr!')
+        var asciinemaVideo = "#" + $(this).attr('data-id');
+        if ($(asciinemaVideo).hasClass('hidden')){
+            $(asciinemaVideo).removeClass('hidden');
+            $(this).text('Hide Tutorial')
+        } else {
+            $(asciinemaVideo).addClass('hidden');
+            $(this).text('Show Tutorial')
+        }
+        
+    });
+});
+</script>
+
+<!-- Navigation -->
+<nav class="navbar navbar-inverse navbar-fixed-top">
+    <div class="container topnavlinks">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="index.html">&nbsp;<span class="projectTitle"> Singularity</span></a>
+        </div>
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+            <ul class="nav navbar-nav navbar-right">
+                <!-- entries without drop-downs appear here -->
+                
+                
+                
+                <li><a href="blog">News</a></li>
+                
+                
+                
+                <!-- entries with drop-downs appear here -->
+                <!-- conditional logic to control which topnav appears for the audience defined in the configuration file.-->
+                
+                
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">Docs<b class="caret"></b></a>
+                    <ul class="dropdown-menu">
+                        
+                        
+                        <li><a href="admin-guide">Admin Guide</a></li>
+                        
+                        
+                        
+                        <li><a href="user-guide">User Guide</a></li>
+                        
+                        
+                        
+                        <li><a href="archive">Archive</a></li>
+                        
+                        
+                        
+                        <li><a href="links">Contributed Content</a></li>
+                        
+                        
+                    </ul>
+                </li>
+                
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">Quick Links<b class="caret"></b></a>
+                    <ul class="dropdown-menu">
+                        
+                        
+                        <li><a href="https://github.com/singularityware/singularity" target="_blank">Github Repo</a></li>
+                        
+                        
+                        
+                        <li><a href="https://groups.google.com/a/lbl.gov/forum/#!forum/singularity" target="_blank">Google Group</a></li>
+                        
+                        
+                        
+                        <li><a href="http://stackoverflow.com/questions/tagged/singularity" target="_blank">Singularity on Stack Overflow</a></li>
+                        
+                        
+                        
+                        <li><a href="https://singularity-hub.org/faq" target="_blank">Singularity Hub</a></li>
+                        
+                        
+                        
+                        <li><a href="https://singularity-container.slack.com" target="_blank">Slack</a></li>
+                        
+                        
+                        
+                        <li><a href="faq#troubleshooting">Troubleshooting</a></li>
+                        
+                        
+                    </ul>
+                </li>
+                
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">People<b class="caret"></b></a>
+                    <ul class="dropdown-menu">
+                        
+                        
+                        <li><a href="https://github.com/gmkurtzer" target="_blank">Gregory M. Kurtzer</a></li>
+                        
+                        
+                        
+                        <li><a href="https://github.com/vsoch" target="_blank">Vanessa Sochat</a></li>
+                        
+                        
+                        
+                        <li><a href="https://github.com/bauerm97" target="_blank">Michael Bauer</a></li>
+                        
+                        
+                        
+                        <li><a href="https://github.com/bbockelm" target="_blank">Brian Bockelman</a></li>
+                        
+                        
+                        
+                        <li><a href="https://github.com/singularityware/singularity/blob/master/AUTHORS.md" target="_blank">Complete Authors List</a></li>
+                        
+                        
+                    </ul>
+                </li>
+                
+                
+                
+                <li><a href="/search"><i class="fa fa-search"></i></li>
+                <!-- jekyll search hidden in favor of google
+                <li>
+                    <div id="search-demo-container">
+                        <input type="text" id="search-input" placeholder="search...">
+                        <ul id="results-container"></ul>
+                    </div>
+                    <script src="assets/js/jekyll-search.js" type="text/javascript"></script>
+                    <script type="text/javascript">
+                            SimpleJekyllSearch.init({
+                                searchInput: document.getElementById('search-input'),
+                                resultsContainer: document.getElementById('results-container'),
+                                dataSource: 'search.json',
+                                searchResultTemplate: '<li><a href="{url}" title="Security">{title}</a></li>',
+                    noResultsText: 'No results found.',
+                            limit: 10,
+                            fuzzy: true,
+                    })
+                    </script>
+                    end search-->
+                </li>
+            </ul>
+        </div>
+        </div>
+        <!-- /.container -->
+</nav>
+
+<!-- Page Content -->
+<div class="container">
+    <div class="col-lg-12">&nbsp;</div>
+    <!-- Content Row -->
+    <div class="row">
+        <!-- Sidebar Column -->
+        <div class="col-md-3">
+          
+
+
+
+
+
+
+<ul id="mysidebar" class="nav">
+
+    
+    <div class="shiny"><a href="\"><figure><img src="/images/logo/logo.svg" class="sidebar-logo"/></figure></a></div>
+    
+
+    <li class="sidebarTitle">Admin Guide</li>
+    
+    
+    
+    <li>
+        <a href="#">Quick Start</a>
+        <ul>
+            
+            
+            
+            <li><a href="admin-guide">Administration QuickStart</a></li>
+            
+            
+            
+            
+            
+            
+            <li class="active"><a href="docs-security">Security</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-config">The Singularity Config File</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-admin-checks">Container Checks</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-troubleshooting">Troubleshooting</a></li>
+            
+            
+            
+            
+        </ul>
+        
+        
+    
+    <li>
+        <a href="#">Installation Environments</a>
+        <ul>
+            
+            
+            
+            <li><a href="docs-hpc">Singularity on HPC</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="image-environment">Image Environment</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-license">License</a></li>
+            
+            
+            
+            
+        </ul>
+        
+        
+        
+        <!-- if you aren't using the accordion, uncomment this block:
+           <p class="external">
+               <a href="#" id="collapseAll">Collapse All</a> | <a href="#" id="expandAll">Expand All</a>
+           </p>
+           -->
+    </li>
+</ul>
+</div>
+
+<!-- this highlights the active parent class in the navgoco sidebar. this is critical so that the parent expands when you're viewing a page. This must appear below the sidebar code above. Otherwise, if placed inside customscripts.js, the script runs before the sidebar code runs and the class never gets inserted.-->
+<script>$("li.active").parents('li').toggleClass("active");</script>
+
+    <!-- Content Column -->
+    <div class="col-md-9">
+        <div class="post-header">
+   <h1 class="post-title-main">Security</h1>
+   <small style="color: #666; margin-top:50px; font-variant:italic">These docs are for Singularity Version 2.4. For older versions, see our <a class="no-after" 
+                                                               href="https://singularityware.github.io/archive">archive</a></small>
+</div>
+
+
+
+<div class="post-content">
+
+   
+
+    <!-- Previous and next buttons-->
+    <div class="row" style="padding-top:30px; margin-bottom:10px"><div class="col-md-12">
+        <a href="#"><button style="float:left" class="hidden previous-button btn btn-circle btn-default"><i class="fa-2x fa fa-angle-double-left"></i></button></a>
+        <a href="#"><button style="float:right" class="hidden next-button btn btn-circle btn-default"><i class="fa fa-angle-double-right fa-2x"></i></button></a>
+    </div></div>
+
+    <script>
+    $(document).ready(function(){
+
+        var next = $("li.active").next().last().find('a').attr('href');
+        var previous = $("li.active").prev().last().find('a').attr('href');
+
+        // NEXT BUTTON
+        if (typeof next == 'undefined'){
+            console.log("disabling next button")
+            $(".next-button").addClass("hidden")
+        } else if (next == "#") {
+            next = $("li.active").next().find("li").first().find('a').attr('href');
+            $(".next-button").closest('a').attr('href', next)
+            $(".next-button").removeClass('hidden')
+        } else {
+            $(".next-button").closest('a').attr('href', next)
+            $(".next-button").removeClass('hidden')
+        }
+
+        // PREVIOUS BUTTON
+        if (typeof previous == 'undefined'){
+            console.log("disabling previous button")
+            $(".previous-button").addClass("hidden")
+        } else if (previous == "#") {
+            previous = $("li.active").prev().find("li").last().find('a').attr('href')
+            $(".previous-button").closest('a').attr('href', previous)
+            $(".previous-button").removeClass('hidden')
+        } else {
+            $(".previous-button").closest('a').attr('href', previous)
+            $(".previous-button").removeClass('hidden')
+        }
+
+    })
+    </script>
+
+    
+    
+<!-- this handles the automatic toc. use ## for subheads to auto-generate the on-page minitoc. if you use html tags, you must supply an ID for the heading element in order for it to appear in the minitoc. -->
+<script>
+$( document ).ready(function() {
+  // Handler for .ready() called.
+
+$('#toc').toc({ minimumHeaders: 0, listType: 'ul', showSpeed: 0, headers: 'h2,h3,h4' });
+
+/* this offset helps account for the space taken up by the floating toolbar. */
+$('#toc').on('click', 'a', function() {
+  var target = $(this.getAttribute('href'))
+    , scroll_target = target.offset().top
+
+  $(window).scrollTop(scroll_target - 10);
+  return false
+})
+  
+});
+</script>
+
+<div id="toc"></div>
+
+    
+
+  
+<!-- this handles the automatic toc. use ## for subheads to auto-generate the on-page minitoc. if you use html tags, you must supply an ID for the heading element in order for it to appear in the minitoc. -->
+<script>
+$( document ).ready(function() {
+  // Handler for .ready() called.
+
+$('#toc').toc({ minimumHeaders: 0, listType: 'ul', showSpeed: 0, headers: 'h2,h3,h4' });
+
+/* this offset helps account for the space taken up by the floating toolbar. */
+$('#toc').on('click', 'a', function() {
+  var target = $(this.getAttribute('href'))
+    , scroll_target = target.offset().top
+
+  $(window).scrollTop(scroll_target - 10);
+  return false
+})
+  
+});
+</script>
+
+<div id="toc"></div>
+
+<h2 id="container-security-paradigms">Container security paradigms</h2>
+<p>First some background. Most container platforms operate on the premise, <strong>trusted users running trusted containers</strong>. This means that the primary UNIX account controlling the container platform is either “root” or user(s) that root has deputized (either via <code class="highlighter-rouge">sudo</code> or given access to a control socket of a root owned daemon process).</p>
+
+<p>Singularity on the other hand, operates on a different premise because it was developed for HPC type infrastructures where you have users, none of which are considered trusted. This means the paradigm is considerably different as we must support <strong>untrusted users running untrusted containers</strong>.</p>
+
+<h2 id="untrusted-users-running-untrusted-containers">Untrusted users running untrusted containers!</h2>
+<p>This simple phrase describes the security perspective Singularity is designed with. And if you additionally consider the fact that running containers at all typically requires some level of privilege escalation, means that attention to security is of the utmost importance.</p>
+
+<h3 id="privilege-escalation-is-necessary-for-containerization">Privilege escalation is necessary for containerization!</h3>
+<p>As mentioned, there are several containerization system calls and functions which are considered “privileged” in that they must be executed with a certain level of capability/privilege. To do this, all container systems must employ one of the following mechanisms:</p>
+
+<ol>
+  <li><strong>Limit usage to root:</strong> Only allow the root user (or users granted <code class="highlighter-rouge">sudo</code>) to run containers. This has the obvious limitation of not allowing arbitrary users the ability to run containers, nor does it allow users to run containers as themselves. Access to data, security data, and securing systems becomes difficult and perhaps impossible.
+    <ul>
+      <li><strong>Root owned daemon process:</strong> Some container systems use a root owned daemon background process which manages the containers and spawns the jobs within the container. Implementations of this typically have an IPC control socket for communicating with this root owned daemon process and if you wish to allow trusted users to control the daemon, you must give them access to the control socket. This is the Docker model.</li>
+      <li><strong>SetUID:</strong> Set UID is the “old school” UNIX method for running a particular program with escalated permission. While it is widely used due to it’s legacy and POSIX requirement, it lacks the ability to manage fine grained control of what a process can and can not do; a SetUID root program runs as root with all capabilities that comes with root. For this reason, SetUID programs are traditional targets for hackers.</li>
+      <li><strong>User Namespace:</strong> The Linux kernel’s user namespace may allow a user to virtually become another user and run a limited set privileged system functions. Here the privilege escalation is managed via the Linux kernel which takes the onus off of the program. This is a new kernel feature and thus requires new kernels and not all distributions have equally adopted this technology.</li>
+      <li><strong>Capability Sets:</strong> Linux handles permissions, access, and roles via capability sets. The root user has these capabilities automatically activated while non-privileged users typically do not have these capabilities enabled. You can enable and disable capabilities on a per process and per file basis (if allowed to do so).</li>
+    </ul>
+  </li>
+</ol>
+
+<h3 id="how-does-singularity-do-it">How does Singularity do it?</h3>
+<p>Singularity must allow users to run containers as themselves which rules out options 1 and 2 from the above list. Singularity supports the rest of the options to following degrees of functionally:</p>
+
+<ul>
+  <li><strong>User Namespace:</strong> Singularity supports the user namespace natively and can run completely unprivileged (“rootless”) since version 2.2 (October 2016) but features are severely limited. You will not be able to use container “images” and will be forced to only work with directory (sandbox) based containers. Additionally, as mentioned, the user namespace is not equally supported on all distribution kernels so don’t count on legacy system support and usability may vary.</li>
+  <li><strong>SetUID:</strong> This is the default usage model for Singularity because it gives the most flexibility in terms of supported features and legacy compliance. It is also the most risky from a security perspective. For that reason, Singularity has been developed with transparency in mind. The code is written with attention to simplicity and readability and Singularity increases the effective permission set only when it is necessary, and drops it immediately (as can be seen with the <code class="highlighter-rouge">--debug</code> run flag). There have been several independent audits of the source code, and while they are not definitive, it is a good assurance.</li>
+  <li><strong>Capability Sets:</strong> This is where Singularity is headed as an alternative to SetUID because it allows for much finer grained capability control and will support all of Singularity’s features. The downside is that it is not supported equally on shared file systems.</li>
+</ul>
+
+<h2 id="where-are-the-singularity-privileged-components">Where are the Singularity privileged components</h2>
+<p>When you install Singularity as root, it will automatically setup the necessary files as SetUID (as of version 2.4, this is the default run mode). The location of these files is dependent on how Singularity was installed and the options passed to the <code class="highlighter-rouge">configure</code> script. Assuming a default <code class="highlighter-rouge">./configure</code> run which installs files into <code class="highlighter-rouge">--prefix</code> of <code class="highlighter-rouge">/usr/local</code> you can find the SetUID programs as follows:</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code><span class="gp">$ </span>find /usr/local/libexec/singularity/ -perm -4000
+/usr/local/libexec/singularity/bin/start-suid
+/usr/local/libexec/singularity/bin/action-suid
+/usr/local/libexec/singularity/bin/mount-suid
+</code></pre>
+</div>
+
+<p>Each of the binaries is named accordingly to the action that it is suited for, and generally, each handles the required privilege escalation necessary for Singularity to operate. What specifically requires escalated privileges?</p>
+
+<ol>
+  <li>Mounting (and looping) the Singularity container image</li>
+  <li>Creation of the necessary namespaces in the kernel</li>
+  <li>Binding host paths into the container</li>
+</ol>
+
+<p>Removing any of these SUID binaries or changing the permissions on them would cause Singularity to utilize the non-SUID workflows. Each file with <code class="highlighter-rouge">*-suid</code> also has a non-suid equivalent:</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code>/usr/local/libexec/singularity/bin/start
+/usr/local/libexec/singularity/bin/action
+/usr/local/libexec/singularity/bin/mount
+</code></pre>
+</div>
+
+<p>While most of these workflows will not properly function without the SUID components, we have provided these fall back executables for sites that wish to limit the SETUID capabilities to the bare essentials/minimum. To disable the SetUID portions of Singularity, you can either remove the above <code class="highlighter-rouge">*-suid</code> files, or you can edit the setting for <code class="highlighter-rouge">allow suid</code> at the top of the <code class="highlighter-rouge">singularity.conf</code> file, which is typically located in <code class="highlighter-rouge">$PREFIX/etc/singularity/singularity.conf</code>.</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code># ALLOW SETUID: [BOOL]
+# DEFAULT: yes
+# Should we allow users to utilize the setuid program flow within Singularity?
+# note1: This is the default mode, and to utilize all features, this option
+# will need to be enabled.
+# note2: If this option is disabled, it will rely on the user namespace
+# exclusively which has not been integrated equally between the different
+# Linux distributions.
+allow setuid = yes
+</code></pre>
+</div>
+
+<p>You can also install Singularity as root without any of the SetUID components with the configure option <code class="highlighter-rouge">--disable-suid</code> as follows:</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code><span class="gp">$ </span>./configure --disable-suid --prefix<span class="o">=</span>/usr/local
+<span class="gp">$ </span>make
+<span class="gp">$ </span>sudo make install
+</code></pre>
+</div>
+
+<h2 id="can-i-install-singularity-as-a-user">Can I install Singularity as a user?</h2>
+<p>Yes, but don’t expect all of the functions to work. If the SetUID components are not present, Singularity will attempt to use the “user namespace”. Even if the kernel you are using supports this namespace fully, you will still not be able to access all of the Singularity features.</p>
+
+<h2 id="container-permissions-and-usage-strategy">Container permissions and usage strategy</h2>
+<p>As a system admin, you want to set up a configuration that is customized for your cluster or shared resource. In the following paragraphs, we will elaborate on this container permissions strategy, giving detail about which users are allowed to run containers, along with image curation and ownership.</p>
+
+<p>These settings can all be found in the Singularity configuration file which is installed to <code class="highlighter-rouge">$PREFIX/etc/singularity/singularity.conf</code>. When running in a privileged mode, the configuration file <strong>MUST</strong> be owned by root and thus the system administrator always has the final control.</p>
+
+<h3 id="controlling-what-kind-of-containers-are-allowed">controlling what kind of containers are allowed</h3>
+<p>Singularity supports several different container formats:</p>
+
+<ul>
+  <li><strong>squashfs:</strong> Compressed immutable (read only) container images (default in version 2.4)</li>
+  <li><strong>extfs:</strong> Raw file system writable container images</li>
+  <li><strong>dir:</strong> Sandbox containers (<em>chroot</em> style directories)</li>
+</ul>
+
+<p>Using the Singularity configuration file, you can control what types of containers Singularity will support:</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code><span class="c"># ALLOW CONTAINER ${TYPE}: [BOOL]</span>
+<span class="c"># DEFAULT: yes</span>
+<span class="c"># This feature limits what kind of containers that Singularity will allow</span>
+<span class="c"># users to use (note this does not apply for root).</span>
+allow container squashfs <span class="o">=</span> yes
+allow container extfs <span class="o">=</span> yes
+allow container dir <span class="o">=</span> yes
+</code></pre>
+</div>
+
+<h3 id="limiting-usage-to-specific-container-file-owners">limiting usage to specific container file owners</h3>
+<p>One benefit of using container images is that they exist on the filesystem as any other file would. This means that POSIX permissions are mandatory. Here you can configure Singularity to only “trust” containers that are owned by a particular set of users.</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code><span class="c"># LIMIT CONTAINER OWNERS: [STRING]</span>
+<span class="c"># DEFAULT: NULL</span>
+<span class="c"># Only allow containers to be used that are owned by a given user. If this</span>
+<span class="c"># configuration is undefined (commented or set to NULL), all containers are</span>
+<span class="c"># allowed to be used. This feature only applies when Singularity is running in</span>
+<span class="c"># SUID mode and the user is non-root.</span>
+<span class="c">#limit container owners = gmk, singularity, nobody</span>
+</code></pre>
+</div>
+
+<p><em>note: If you are in a high risk security environment, you may want to enable this feature. Trusting container images to users could allow a malicious user to modify an image either before or while being used and cause unexpected behavior from the kernel (e.g. a <a href="https://en.wikipedia.org/wiki/Denial-of-service_attack">DOS attack</a>). For more information, please see: <a href="https://lwn.net/Articles/652468/">https://lwn.net/Articles/652468/</a></em></p>
+
+<h3 id="limiting-usage-to-specific-paths">limiting usage to specific paths</h3>
+<p>The configuration file also gives you the ability to limit containers to specific paths. This is very useful to ensure that only trusted or blessed container’s are being used (it is also beneficial to ensure that containers are only being used on performant file systems).</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code><span class="c"># LIMIT CONTAINER PATHS: [STRING]</span>
+<span class="c"># DEFAULT: NULL</span>
+<span class="c"># Only allow containers to be used that are located within an allowed path</span>
+<span class="c"># prefix. If this configuration is undefined (commented or set to NULL),</span>
+<span class="c"># containers will be allowed to run from anywhere on the file system. This</span>
+<span class="c"># feature only applies when Singularity is running in SUID mode and the user is</span>
+<span class="c"># non-root.</span>
+<span class="c">#limit container paths = /scratch, /tmp, /global</span>
+</code></pre>
+</div>
+
+<h2 id="logging">Logging</h2>
+<p>Singularity offers a very comprehensive auditing mechanism via the system log. For each command that is issued, it prints the UID, PID, and location of the command. For example, let’s see what happens if we shell into an image:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ singularity exec ubuntu true
+$ singularity shell --home $HOME:/ ubuntu
+Singularity: Invoking an interactive shell within container...
+
+ERROR  : Failed to execv() /.singularity.d/actions/shell, continuing to /bin/sh: No such file or directory
+ERROR  : What are you doing gmk, this is highly irregular!
+ABORT  : Retval = 255
+</code></pre>
+</div>
+
+<p>We can then peek into the system log to see what was recorded:</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code>Oct  5 08:51:12 localhost Singularity: action-suid <span class="o">(</span><span class="nv">U</span><span class="o">=</span>1000,P<span class="o">=</span>32320<span class="o">)</span>&gt; <span class="nv">USER</span><span class="o">=</span>gmk, <span class="nv">IMAGE</span><span class="o">=</span><span class="s1">'ubuntu'</span>, <span class="nv">COMMAND</span><span class="o">=</span><span class="s1">'exec'</span>
+Oct  5 08:53:13 localhost Singularity: action-suid <span class="o">(</span><span class="nv">U</span><span class="o">=</span>1000,P<span class="o">=</span>32311<span class="o">)</span>&gt; <span class="nv">USER</span><span class="o">=</span>gmk, <span class="nv">IMAGE</span><span class="o">=</span><span class="s1">'ubuntu'</span>, <span class="nv">COMMAND</span><span class="o">=</span><span class="s1">'shell'</span>
+Oct  5 08:53:13 localhost Singularity: action-suid <span class="o">(</span><span class="nv">U</span><span class="o">=</span>1000,P<span class="o">=</span>32311<span class="o">)</span>&gt; Failed to execv<span class="o">()</span> /.singularity.d/actions/shell, continuing to /bin/sh: No such file or directory
+Oct  5 08:53:13 localhost Singularity: action-suid <span class="o">(</span><span class="nv">U</span><span class="o">=</span>1000,P<span class="o">=</span>32311<span class="o">)</span>&gt; What are you doing gmk, this is highly irregular!
+Oct  5 08:53:13 localhost Singularity: action-suid <span class="o">(</span><span class="nv">U</span><span class="o">=</span>1000,P<span class="o">=</span>32311<span class="o">)</span>&gt; Retval <span class="o">=</span> 255
+</code></pre>
+</div>
+
+<p><strong>note: All errors are logged!</strong></p>
+
+<h3 id="a-peek-into-the-setuid-program-flow">A peek into the SetUID program flow</h3>
+<p>We can also add the <code class="highlighter-rouge">--debug</code> argument to any command itself at runtime to see everything that Singularity is doing. In this case we can run Singularity in debug mode and request use of the PID namespace so we can see what Singularity is doing there:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ singularity --debug shell --pid ubuntu
+Enabling debugging
+Ending argument loop
+Singularity version: 2.3.9-development.gc35b753
+Exec'ing: /usr/local/libexec/singularity/cli/shell.exec
+Evaluating args: '--pid ubuntu'
+</code></pre>
+</div>
+<p>(snipped to PID namespace implementation)</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>DEBUG   [U=1000,P=30961]   singularity_runtime_ns_pid()              Using PID namespace: CLONE_NEWPID
+DEBUG   [U=1000,P=30961]   singularity_runtime_ns_pid()              Virtualizing PID namespace
+DEBUG   [U=1000,P=30961]   singularity_registry_get()                Returning NULL on 'DAEMON_START'
+DEBUG   [U=1000,P=30961]   prepare_fork()                            Creating parent/child coordination pipes.
+VERBOSE [U=1000,P=30961]   singularity_fork()                        Forking child process
+DEBUG   [U=1000,P=30961]   singularity_priv_escalate()               Temporarily escalating privileges (U=1000)
+DEBUG   [U=0,P=30961]      singularity_priv_escalate()               Clearing supplementary GIDs.
+DEBUG   [U=0,P=30961]      singularity_priv_drop()                   Dropping privileges to UID=1000, GID=1000 (8 supplementary GIDs)
+DEBUG   [U=0,P=30961]      singularity_priv_drop()                   Restoring supplementary groups
+DEBUG   [U=1000,P=30961]   singularity_priv_drop()                   Confirming we have correct UID/GID
+VERBOSE [U=1000,P=30961]   singularity_fork()                        Hello from parent process
+DEBUG   [U=1000,P=30961]   install_generic_signal_handle()           Assigning generic sigaction()s
+DEBUG   [U=1000,P=30961]   install_generic_signal_handle()           Creating generic signal pipes
+DEBUG   [U=1000,P=30961]   install_sigchld_signal_handle()           Assigning SIGCHLD sigaction()
+DEBUG   [U=1000,P=30961]   install_sigchld_signal_handle()           Creating sigchld signal pipes
+DEBUG   [U=1000,P=30961]   singularity_fork()                        Dropping permissions
+DEBUG   [U=0,P=30961]      singularity_priv_drop()                   Dropping privileges to UID=1000, GID=1000 (8 supplementary GIDs)
+DEBUG   [U=0,P=30961]      singularity_priv_drop()                   Restoring supplementary groups
+DEBUG   [U=1000,P=30961]   singularity_priv_drop()                   Confirming we have correct UID/GID
+DEBUG   [U=1000,P=30961]   singularity_signal_go_ahead()             Sending go-ahead signal: 0
+DEBUG   [U=1000,P=30961]   wait_child()                              Parent process is waiting on child process
+DEBUG   [U=0,P=1]          singularity_priv_drop()                   Dropping privileges to UID=1000, GID=1000 (8 supplementary GIDs)
+DEBUG   [U=0,P=1]          singularity_priv_drop()                   Restoring supplementary groups
+DEBUG   [U=1000,P=1]       singularity_priv_drop()                   Confirming we have correct UID/GID
+VERBOSE [U=1000,P=1]       singularity_fork()                        Hello from child process
+DEBUG   [U=1000,P=1]       singularity_wait_for_go_ahead()           Waiting for go-ahead signal
+DEBUG   [U=1000,P=1]       singularity_wait_for_go_ahead()           Received go-ahead signal: 0
+VERBOSE [U=1000,P=1]       singularity_registry_set()                Adding value to registry: 'PIDNS_ENABLED' = '1'
+</code></pre>
+</div>
+<p>(snipped to end)</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>DEBUG   [U=1000,P=1]       envar_set()                               Unsetting environment variable: SINGULARITY_APPNAME
+DEBUG   [U=1000,P=1]       singularity_registry_get()                Returning value from registry: 'COMMAND' = 'shell'
+LOG     [U=1000,P=1]       main()                                    USER=gmk, IMAGE='ubuntu', COMMAND='shell'
+INFO    [U=1000,P=1]       action_shell()                            Singularity: Invoking an interactive shell within container...
+
+DEBUG   [U=1000,P=1]       action_shell()                            Exec'ing /.singularity.d/actions/shell
+Singularity ubuntu:~&gt; 
+</code></pre>
+</div>
+
+<p>Not only do I see all of the configuration options that I (probably forgot about) previously set, I can trace the entire flow of Singularity from the first execution of an action (shell) to the final shell into the container. Each line also describes what is the effective UID running the command, what is the PID, and what is the function emitting the debug message.</p>
+
+<h3 id="a-peek-into-the-rootless-program-flow">A peek into the “rootless” program flow</h3>
+<p>The above snippet was using the default SetUID program flow with a container image file named “ubuntu”. For comparison, if we also use the <code class="highlighter-rouge">--userns</code> flag, and snip in the same places, you can see how the effective UID is never escalated, but we have the same outcome using a sandbox directory (<em>chroot</em>) style container.</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ singularity -d shell --pid --userns ubuntu.dir/
+Enabling debugging
+Ending argument loop
+Singularity version: 2.3.9-development.gc35b753
+Exec'ing: /usr/local/libexec/singularity/cli/shell.exec
+Evaluating args: '--pid --userns ubuntu.dir/'
+</code></pre>
+</div>
+<p>(snipped to PID namespace implementation, same place as above)</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>DEBUG   [U=1000,P=32081]   singularity_runtime_ns_pid()              Using PID namespace: CLONE_NEWPID
+DEBUG   [U=1000,P=32081]   singularity_runtime_ns_pid()              Virtualizing PID namespace
+DEBUG   [U=1000,P=32081]   singularity_registry_get()                Returning NULL on 'DAEMON_START'
+DEBUG   [U=1000,P=32081]   prepare_fork()                            Creating parent/child coordination pipes.
+VERBOSE [U=1000,P=32081]   singularity_fork()                        Forking child process
+DEBUG   [U=1000,P=32081]   singularity_priv_escalate()               Not escalating privileges, user namespace enabled
+DEBUG   [U=1000,P=32081]   singularity_priv_drop()                   Not dropping privileges, user namespace enabled
+VERBOSE [U=1000,P=32081]   singularity_fork()                        Hello from parent process
+DEBUG   [U=1000,P=32081]   install_generic_signal_handle()           Assigning generic sigaction()s
+DEBUG   [U=1000,P=32081]   install_generic_signal_handle()           Creating generic signal pipes
+DEBUG   [U=1000,P=32081]   install_sigchld_signal_handle()           Assigning SIGCHLD sigaction()
+DEBUG   [U=1000,P=32081]   install_sigchld_signal_handle()           Creating sigchld signal pipes
+DEBUG   [U=1000,P=32081]   singularity_signal_go_ahead()             Sending go-ahead signal: 0
+DEBUG   [U=1000,P=32081]   wait_child()                              Parent process is waiting on child process
+DEBUG   [U=1000,P=1]       singularity_priv_drop()                   Not dropping privileges, user namespace enabled
+VERBOSE [U=1000,P=1]       singularity_fork()                        Hello from child process
+DEBUG   [U=1000,P=1]       singularity_wait_for_go_ahead()           Waiting for go-ahead signal
+DEBUG   [U=1000,P=1]       singularity_wait_for_go_ahead()           Received go-ahead signal: 0
+VERBOSE [U=1000,P=1]       singularity_registry_set()                Adding value to registry: 'PIDNS_ENABLED' = '1'
+</code></pre>
+</div>
+<p>(snipped to end)</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>DEBUG   [U=1000,P=1]       envar_set()                               Unsetting environment variable: SINGULARITY_APPNAME
+DEBUG   [U=1000,P=1]       singularity_registry_get()                Returning value from registry: 'COMMAND' = 'shell'
+LOG     [U=1000,P=1]       main()                                    USER=gmk, IMAGE='ubuntu.dir', COMMAND='shell'
+INFO    [U=1000,P=1]       action_shell()                            Singularity: Invoking an interactive shell within container...
+
+DEBUG   [U=1000,P=1]       action_shell()                            Exec'ing /.singularity.d/actions/shell
+Singularity ubuntu.dir:~&gt; whoami
+gmk
+Singularity ubuntu.dir:~&gt; 
+</code></pre>
+</div>
+
+<p>Here you can see that the output and functionality is very similar, but we never increased any privilege and none of the <code class="highlighter-rouge">*-suid</code> program flow was utilized. We had to use a <em>chroot</em> style directory container (as images are not supported with the user namespace, but you can clearly see that the effective UID never had to change to run this container.</p>
+
+<p><em>note: Singularity can natively create and manage chroot style containers just like images! The above image was created using the command: <code class="highlighter-rouge">singularity build ubuntu.dir docker://ubuntu:latest</code></em></p>
+
+<h2 id="summary">Summary</h2>
+<p>Singularity supports multiple modes of operation to meet your security needs. For most HPC centers, and general usage scenarios, the default run mode is most effective and featurefull. For the security critical implementations, the user namespace workflow maybe a better option. It becomes a balance security and functionality (the most secure systems do nothing).</p>
+
+
+    <!-- More navigation on the bottom -->
+    <div class="row" style="padding-top:30px; margin-bottom:10px"><div class="col-md-12">
+        <a href="#"><button style="width:20%; height: 70px; float:left" class="hidden previous-button btn btn-lg btn-default">Previous</button></a>
+        <a href="#"><button style="width:20%; height: 70px; float:right" class="hidden next-button btn btn-lg btn-default">Next</button></a>
+    </div></div>
+
+
+    
+
+    
+
+    <a style="margin-top:10px;margin-bottom:10px" target="_blank" href="https://github.com/singularityware/singularityware.github.io/blob/master/pages/_pages/docs/docs-security.md" class="btn btn-default btn-xs githubEditButton" role="button"><i class="fa fa-github fa-lg"></i> Edit me</a>
+    
+
+    
+
+    <div class="tags">
+        
+    </div>
+
+    
+
+</div>
+
+<hr class="shaded"/>
+
+<footer>
+            <div class="row">
+
+               <!-- Social Media links, etc -->
+               <div class="col-lg-6 footer">
+               
+    <a class="no-after social-icon" href="https://twitter.com/SingularityApp">
+      <i class="fa fa-4x fa-twitter no-after"></i>
+    </a>
+
+
+    <a class="no-after social-icon" href="https://github.com/singularityware">
+      <i class="fa fa-4x fa-github no-after"></i>
+    </a>
+
+
+
+               </div>
+
+                <div class="col-lg-6 footer">
+<p><img src="images/logo/logo.png" alt="Company logo" style="width:40px;padding-bottom:10px"/></p>
+ Site last generated: Oct 12, 2017 <br />
+                </div>
+            </div>
+</footer>
+
+
+    </div>
+    <!-- /.row -->
+</div>
+<!-- /.container -->
+    </div>
+
+</body>
+
+<!-- the google_analytics_id gets auto inserted from the config file -->
+
+
+
+<script>(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)})(window,document,'script','//www.google-analytics.com/analytics.js','ga');ga('create','UA-84672381-1','auto');ga('require','displayfeatures');ga('send','pageview');</script>
+
+
+</html>

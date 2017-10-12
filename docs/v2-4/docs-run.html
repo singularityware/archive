@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<meta name="description" content="   Singularity Run   These docs are for Singularity Version 2.4. For older versions, see our archive                                         It’s common to want your container to “do a thing.” Singularity run allows you to define a custom action to be taken when a container is either run or executed directly by file name. Specifically, you might want it to execute a command, or run an executable that gives access to many different functions for the user.OverviewFirst, how do we run a container? We can do that in one of two ways - the commands below are identical:$ singularity run centos7.img$ ./centos7.imgIn both cases, we are executing the container’s “runscript”  (the executable /singularity at the root of the image) that is either an actual file (version 2.2 and earlier) or a link to one (2.3 and later). For example, looking at a 2.3 image, I can see the runscript via the path to the link:$ singularity exec centos7.img cat /singularity#!/bin/shexec /bin/bash "$@"or to the actual file in the container’s metadata folder, /.singularity.d$ singularity exec centos7.img cat /.singularity.d/runscript#!/bin/shexec /bin/bash "$@"Notice how the runscript has bash followed by $@? This is good practice to include in a runscript, as any arguments passed by the user will be given to the container. Thus, I could send a command to the container for bash to run:ExamplesIn this example the container has a very simple runscript defined.$ singularity exec centos7.img cat /singularity#!/bin/shecho motorbot$ singularity run centos7.imgmotorbotDefining the RunscriptWhen you first create a container, the runscript is defined using the following order of operations:  A user defined runscript in the %runscript section of a bootstrap takes preference over all  If the user has not defined a runscript and is importing a Docker container, the Docker ENTRYPOINT is used.  If a user has not defined a runscript and adds IncludeCmd: yes to the bootstrap file, the CMD is used over the ENTRYPOINT  If the user has not defined a runscript and the Docker container doesn’t have an ENTRYPOINT, we look for CMD, even if the user hasn’t asked for it.  If the user has not deifned a runscript, and there is no ENTRYPOINT or CMD (or we aren’t importing Docker at all) then we default to /bin/bashHere is how you would define the runscript section when you build an image:Bootstrap: dockerFrom: ubuntu:latest%runscriptexec /usr/bin/python "$@"and of course python should be installed as /usr/bin/python. The addition of "$@" ensures that arguments are passed along from the user. If you want your container to run absolutely any command given to it, and you want to use run instead of exec, you could also just do:Bootstrap: dockerFrom: ubuntu:latest%runscriptexec "$@"`If you want different entrypoints for your image, we recommend using the %apprun syntax (see apps). Here we have two entrypoints for foo and bar:%runscriptexec echo "Try running with --app dog/cat"%apprun dogexec echo Hello "$@", this is Dog%apprun catexec echo Meow "$@", this is Catand then running (after build of a complete recipe) would look like:sudo singularity build catdog.simg Singularity $ singularity run catdog.simg Try running with --app dog/cat$ singularity run --app cat catdog.simg Meow , this is Cat$ singularity run --app dog catdog.simg  Hello , this is DogGenerally, it is advised to provide help for your container with %help or %apphelp. If you find it easier, you can also provide help by way of a runscript that tells your user how to use the container, and gives access to the important executables. Regardless of your strategy. a reproducible container is one that tells the user how to interact with it.                Previous        Next                 Edit me                                                                                                                                                 Site last generated: Oct 12, 2017                             ">
+
+
+<meta name="name" content="Singularity Run">
+
+<meta name="thumbnail" content="http://singularity.lbl.gov/images/logo/logo.svg">
+
+
+
+
+<title>Singularity Run | Singularity</title>
+<link rel="stylesheet" href="assets/css/syntax.css">
+
+
+<link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+<link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet">
+<!--<link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">-->
+<link rel="stylesheet" href="assets/css/modern-business.css">
+<link rel="stylesheet" href="assets/css/lavish-bootstrap.css">
+<link rel="stylesheet" href="assets/css/customstyles.css">
+<link rel="stylesheet" href="assets/css/theme-blue.css">
+
+<link rel="stylesheet" type="text/css" href="assets/css/asciinema-player.css" />
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.min.js"></script>
+<script src="assets/js/jquery.navgoco.min.js"></script>
+
+
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/anchor-js/2.0.0/anchor.min.js"></script>
+<script src="assets/js/toc.js"></script>
+<script src="assets/js/customscripts.js"></script>
+
+<link rel="shortcut icon" href="images/favicon/favicon.ico">
+
+<!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+<!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+<!--[if lt IE 9]>
+<script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+<script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+<![endif]-->
+
+<link rel="alternate" type="application/rss+xml" title="" href="http://localhost:4005feed.xml">
+
+    <script>
+        $(document).ready(function() {
+
+            // Initialize navgoco with default options
+            $("#mysidebar").navgoco({
+                caretHtml: '',
+                accordion: true,
+                openClass: 'active', // open
+                save: false, // leave false or nav highlighting doesn't work right
+                cookie: {
+                    name: 'navgoco',
+                    expires: false,
+                    path: '/'
+                },
+                slide: {
+                    duration: 400,
+                    easing: 'swing'
+                }
+            });
+
+            $("#collapseAll").click(function(e) {
+                e.preventDefault();
+                $("#mysidebar").navgoco('toggle', false);
+            });
+
+            $("#expandAll").click(function(e) {
+                e.preventDefault();
+                $("#mysidebar").navgoco('toggle', true);
+            });
+
+        });
+
+    </script>
+    <script>
+        $(function () {
+            $('[data-toggle="tooltip"]').tooltip()
+        })
+    </script>
+    
+
+</head>
+<body>
+<!-- asciinema player -->
+<script src="assets/js/asciinema-player.js"></script>
+
+<!-- Show or hide players on button clicks-->
+<script>
+$( document ).ready(function() {
+    $(".asciinema-button").click(function(){
+        console.log('rawwwr!')
+        var asciinemaVideo = "#" + $(this).attr('data-id');
+        if ($(asciinemaVideo).hasClass('hidden')){
+            $(asciinemaVideo).removeClass('hidden');
+            $(this).text('Hide Tutorial')
+        } else {
+            $(asciinemaVideo).addClass('hidden');
+            $(this).text('Show Tutorial')
+        }
+        
+    });
+});
+</script>
+
+<!-- Navigation -->
+<nav class="navbar navbar-inverse navbar-fixed-top">
+    <div class="container topnavlinks">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="index.html">&nbsp;<span class="projectTitle"> Singularity</span></a>
+        </div>
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+            <ul class="nav navbar-nav navbar-right">
+                <!-- entries without drop-downs appear here -->
+                
+                
+                
+                <li><a href="blog">News</a></li>
+                
+                
+                
+                <!-- entries with drop-downs appear here -->
+                <!-- conditional logic to control which topnav appears for the audience defined in the configuration file.-->
+                
+                
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">Docs<b class="caret"></b></a>
+                    <ul class="dropdown-menu">
+                        
+                        
+                        <li><a href="admin-guide">Admin Guide</a></li>
+                        
+                        
+                        
+                        <li><a href="user-guide">User Guide</a></li>
+                        
+                        
+                        
+                        <li><a href="archive">Archive</a></li>
+                        
+                        
+                        
+                        <li><a href="links">Contributed Content</a></li>
+                        
+                        
+                    </ul>
+                </li>
+                
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">Quick Links<b class="caret"></b></a>
+                    <ul class="dropdown-menu">
+                        
+                        
+                        <li><a href="https://github.com/singularityware/singularity" target="_blank">Github Repo</a></li>
+                        
+                        
+                        
+                        <li><a href="https://groups.google.com/a/lbl.gov/forum/#!forum/singularity" target="_blank">Google Group</a></li>
+                        
+                        
+                        
+                        <li><a href="http://stackoverflow.com/questions/tagged/singularity" target="_blank">Singularity on Stack Overflow</a></li>
+                        
+                        
+                        
+                        <li><a href="https://singularity-hub.org/faq" target="_blank">Singularity Hub</a></li>
+                        
+                        
+                        
+                        <li><a href="https://singularity-container.slack.com" target="_blank">Slack</a></li>
+                        
+                        
+                        
+                        <li><a href="faq#troubleshooting">Troubleshooting</a></li>
+                        
+                        
+                    </ul>
+                </li>
+                
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">People<b class="caret"></b></a>
+                    <ul class="dropdown-menu">
+                        
+                        
+                        <li><a href="https://github.com/gmkurtzer" target="_blank">Gregory M. Kurtzer</a></li>
+                        
+                        
+                        
+                        <li><a href="https://github.com/vsoch" target="_blank">Vanessa Sochat</a></li>
+                        
+                        
+                        
+                        <li><a href="https://github.com/bauerm97" target="_blank">Michael Bauer</a></li>
+                        
+                        
+                        
+                        <li><a href="https://github.com/bbockelm" target="_blank">Brian Bockelman</a></li>
+                        
+                        
+                        
+                        <li><a href="https://github.com/singularityware/singularity/blob/master/AUTHORS.md" target="_blank">Complete Authors List</a></li>
+                        
+                        
+                    </ul>
+                </li>
+                
+                
+                
+                <li><a href="/search"><i class="fa fa-search"></i></li>
+                <!-- jekyll search hidden in favor of google
+                <li>
+                    <div id="search-demo-container">
+                        <input type="text" id="search-input" placeholder="search...">
+                        <ul id="results-container"></ul>
+                    </div>
+                    <script src="assets/js/jekyll-search.js" type="text/javascript"></script>
+                    <script type="text/javascript">
+                            SimpleJekyllSearch.init({
+                                searchInput: document.getElementById('search-input'),
+                                resultsContainer: document.getElementById('results-container'),
+                                dataSource: 'search.json',
+                                searchResultTemplate: '<li><a href="{url}" title="Singularity Run">{title}</a></li>',
+                    noResultsText: 'No results found.',
+                            limit: 10,
+                            fuzzy: true,
+                    })
+                    </script>
+                    end search-->
+                </li>
+            </ul>
+        </div>
+        </div>
+        <!-- /.container -->
+</nav>
+
+<!-- Page Content -->
+<div class="container">
+    <div class="col-lg-12">&nbsp;</div>
+    <!-- Content Row -->
+    <div class="row">
+        <!-- Sidebar Column -->
+        <div class="col-md-3">
+          
+
+
+
+
+
+
+<ul id="mysidebar" class="nav">
+
+    
+    <div class="shiny"><a href="\"><figure><img src="/images/logo/logo.svg" class="sidebar-logo"/></figure></a></div>
+    
+
+    <li class="sidebarTitle">User Guide</li>
+    
+    
+    
+    <li>
+        <a href="#">Getting Started</a>
+        <ul>
+            
+            
+            
+            <li><a href="user-guide">Introduction</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-installation">Installation</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="quickstart">Quick Start</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-build-container">Build a Container</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-recipes">Container Recipes</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-flow">Singularity Flow</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-mount">Bind Paths and Mounts</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-overlay">Persistent Overlays</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-instances">Running Services</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-user-checks">Container Checks</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-environment-metadata">Environment and Metadata</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-scif-apps">Reproducible SCI-F Apps</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-docker">Singularity and Docker</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="faq#troubleshooting">Troubleshooting</a></li>
+            
+            
+            
+            
+        </ul>
+        
+        
+    
+    <li>
+        <a href="#">Commands</a>
+        <ul>
+            
+            
+            
+            <li><a href="docs-usage">Command Usage</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-build">build</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-exec">exec</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-inspect">inspect</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-pull">pull</a></li>
+            
+            
+            
+            
+            
+            
+            <li class="active"><a href="docs-run">run</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-shell">shell</a></li>
+            
+            
+            
+            
+        </ul>
+        
+        
+    
+    <li>
+        <a href="#">Image Command Group</a>
+        <ul>
+            
+            
+            
+            <li><a href="docs-export">image.export</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-expand">image.expand</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-import">image.import</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-create">image.create</a></li>
+            
+            
+            
+            
+        </ul>
+        
+        
+    
+    <li>
+        <a href="#">Instance Command Group</a>
+        <ul>
+            
+            
+            
+            <li><a href="docs-instance-start">instance.start</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-instance-list">instance.list</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-instance-stop">instance.stop</a></li>
+            
+            
+            
+            
+        </ul>
+        
+        
+    
+    <li>
+        <a href="#">Deprecated</a>
+        <ul>
+            
+            
+            
+            <li><a href="docs-bootstrap">bootstrap</a></li>
+            
+            
+            
+            
+        </ul>
+        
+        
+        
+        <!-- if you aren't using the accordion, uncomment this block:
+           <p class="external">
+               <a href="#" id="collapseAll">Collapse All</a> | <a href="#" id="expandAll">Expand All</a>
+           </p>
+           -->
+    </li>
+</ul>
+</div>
+
+<!-- this highlights the active parent class in the navgoco sidebar. this is critical so that the parent expands when you're viewing a page. This must appear below the sidebar code above. Otherwise, if placed inside customscripts.js, the script runs before the sidebar code runs and the class never gets inserted.-->
+<script>$("li.active").parents('li').toggleClass("active");</script>
+
+    <!-- Content Column -->
+    <div class="col-md-9">
+        <div class="post-header">
+   <h1 class="post-title-main">Singularity Run</h1>
+   <small style="color: #666; margin-top:50px; font-variant:italic">These docs are for Singularity Version 2.4. For older versions, see our <a class="no-after" 
+                                                               href="https://singularityware.github.io/archive">archive</a></small>
+</div>
+
+
+
+<div class="post-content">
+
+   
+
+    <!-- Previous and next buttons-->
+    <div class="row" style="padding-top:30px; margin-bottom:10px"><div class="col-md-12">
+        <a href="#"><button style="float:left" class="hidden previous-button btn btn-circle btn-default"><i class="fa-2x fa fa-angle-double-left"></i></button></a>
+        <a href="#"><button style="float:right" class="hidden next-button btn btn-circle btn-default"><i class="fa fa-angle-double-right fa-2x"></i></button></a>
+    </div></div>
+
+    <script>
+    $(document).ready(function(){
+
+        var next = $("li.active").next().last().find('a').attr('href');
+        var previous = $("li.active").prev().last().find('a').attr('href');
+
+        // NEXT BUTTON
+        if (typeof next == 'undefined'){
+            console.log("disabling next button")
+            $(".next-button").addClass("hidden")
+        } else if (next == "#") {
+            next = $("li.active").next().find("li").first().find('a').attr('href');
+            $(".next-button").closest('a').attr('href', next)
+            $(".next-button").removeClass('hidden')
+        } else {
+            $(".next-button").closest('a').attr('href', next)
+            $(".next-button").removeClass('hidden')
+        }
+
+        // PREVIOUS BUTTON
+        if (typeof previous == 'undefined'){
+            console.log("disabling previous button")
+            $(".previous-button").addClass("hidden")
+        } else if (previous == "#") {
+            previous = $("li.active").prev().find("li").last().find('a').attr('href')
+            $(".previous-button").closest('a').attr('href', previous)
+            $(".previous-button").removeClass('hidden')
+        } else {
+            $(".previous-button").closest('a').attr('href', previous)
+            $(".previous-button").removeClass('hidden')
+        }
+
+    })
+    </script>
+
+    
+
+  <p>It’s common to want your container to “do a thing.” Singularity <code class="highlighter-rouge">run</code> allows you to define a custom action to be taken when a container is either <code class="highlighter-rouge">run</code> or executed directly by file name. Specifically, you might want it to execute a command, or run an executable that gives access to many different functions for the user.</p>
+
+<!-- this handles the automatic toc. use ## for subheads to auto-generate the on-page minitoc. if you use html tags, you must supply an ID for the heading element in order for it to appear in the minitoc. -->
+<script>
+$( document ).ready(function() {
+  // Handler for .ready() called.
+
+$('#toc').toc({ minimumHeaders: 0, listType: 'ul', showSpeed: 0, headers: 'h2,h3,h4' });
+
+/* this offset helps account for the space taken up by the floating toolbar. */
+$('#toc').on('click', 'a', function() {
+  var target = $(this.getAttribute('href'))
+    , scroll_target = target.offset().top
+
+  $(window).scrollTop(scroll_target - 10);
+  return false
+})
+  
+});
+</script>
+
+<div id="toc"></div>
+
+<h2 id="overview">Overview</h2>
+<p>First, how do we run a container? We can do that in one of two ways - the commands below are identical:</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code><span class="gp">$ </span>singularity run centos7.img
+<span class="gp">$ </span>./centos7.img
+</code></pre>
+</div>
+
+<p>In both cases, we are executing the container’s “runscript”  (the executable <code class="highlighter-rouge">/singularity</code> at the root of the image) that is either an actual file (version 2.2 and earlier) or a link to one (2.3 and later). For example, looking at a 2.3 image, I can see the runscript via the path to the link:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ singularity exec centos7.img cat /singularity
+#!/bin/sh
+
+exec /bin/bash "$@"
+</code></pre>
+</div>
+
+<p>or to the actual file in the container’s metadata folder, <code class="highlighter-rouge">/.singularity.d</code></p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>$ singularity exec centos7.img cat /.singularity.d/runscript
+#!/bin/sh
+
+exec /bin/bash "$@"
+</code></pre>
+</div>
+
+<p>Notice how the runscript has bash followed by <code class="highlighter-rouge">$@</code>? This is good practice to include in a runscript, as any arguments passed by the user will be given to the container. Thus, I could send a command to the container for bash to run:</p>
+
+<h2 id="examples">Examples</h2>
+<p>In this example the container has a very simple runscript defined.</p>
+<div class="highlighter-rouge"><pre class="highlight"><code>$ singularity exec centos7.img cat /singularity
+#!/bin/sh
+
+echo motorbot
+
+$ singularity run centos7.img
+motorbot
+</code></pre>
+</div>
+
+<h3 id="defining-the-runscript">Defining the Runscript</h3>
+<p>When you first create a container, the runscript is defined using the following order of operations:</p>
+
+<ol>
+  <li>A user defined runscript in the <code class="highlighter-rouge">%runscript</code> section of a bootstrap takes preference over all</li>
+  <li>If the user has not defined a runscript and is importing a Docker container, the Docker <code class="highlighter-rouge">ENTRYPOINT</code> is used.</li>
+  <li>If a user has not defined a runscript and adds <code class="highlighter-rouge">IncludeCmd: yes</code> to the bootstrap file, the <code class="highlighter-rouge">CMD</code> is used over the <code class="highlighter-rouge">ENTRYPOINT</code></li>
+  <li>If the user has not defined a runscript and the Docker container doesn’t have an <code class="highlighter-rouge">ENTRYPOINT</code>, we look for <code class="highlighter-rouge">CMD</code>, even if the user hasn’t asked for it.</li>
+  <li>If the user has not deifned a runscript, and there is no <code class="highlighter-rouge">ENTRYPOINT</code> or <code class="highlighter-rouge">CMD</code> (or we aren’t importing Docker at all) then we default to <code class="highlighter-rouge">/bin/bash</code></li>
+</ol>
+
+<p>Here is how you would define the runscript section when you <a href="/docs-build-container">build</a> an image:</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code>Bootstrap: docker
+From: ubuntu:latest
+
+%runscript
+<span class="nb">exec</span> /usr/bin/python <span class="s2">"</span><span class="nv">$@</span><span class="s2">"</span>
+</code></pre>
+</div>
+
+<p>and of course python should be installed as /usr/bin/python. The addition of <code class="highlighter-rouge">"$@"</code> ensures that arguments are passed along from the user. If you want your container to run absolutely any command given to it, and you want to use run instead of exec, you could also just do:</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code>Bootstrap: docker
+From: ubuntu:latest
+
+%runscript
+<span class="nb">exec</span> <span class="s2">"</span><span class="nv">$@</span><span class="s2">"</span><span class="sb">`</span>
+</code></pre>
+</div>
+
+<p>If you want different entrypoints for your image, we recommend using the <code class="highlighter-rouge">%apprun</code> syntax (see <a href="/docs-apps">apps</a>). Here we have two entrypoints for foo and bar:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>%runscript
+exec echo "Try running with --app dog/cat"
+
+%apprun dog
+exec echo Hello "$@", this is Dog
+
+%apprun cat
+exec echo Meow "$@", this is Cat
+</code></pre>
+</div>
+
+<p>and then running (after build of a complete recipe) would look like:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>sudo singularity build catdog.simg Singularity 
+
+$ singularity run catdog.simg 
+Try running with --app dog/cat
+
+$ singularity run --app cat catdog.simg
+ Meow , this is Cat
+$ singularity run --app dog catdog.simg  
+Hello , this is Dog
+</code></pre>
+</div>
+
+<p>Generally, it is advised to provide help for your container with <code class="highlighter-rouge">%help</code> or <code class="highlighter-rouge">%apphelp</code>. If you find it easier, you can also provide help by way of a runscript that tells your user how to use the container, and gives access to the important executables. Regardless of your strategy. a reproducible container is one that tells the user how to interact with it.</p>
+
+
+    <!-- More navigation on the bottom -->
+    <div class="row" style="padding-top:30px; margin-bottom:10px"><div class="col-md-12">
+        <a href="#"><button style="width:20%; height: 70px; float:left" class="hidden previous-button btn btn-lg btn-default">Previous</button></a>
+        <a href="#"><button style="width:20%; height: 70px; float:right" class="hidden next-button btn btn-lg btn-default">Next</button></a>
+    </div></div>
+
+
+    
+
+    
+
+    <a style="margin-top:10px;margin-bottom:10px" target="_blank" href="https://github.com/singularityware/singularityware.github.io/blob/master/pages/_pages/docs/docs-run.md" class="btn btn-default btn-xs githubEditButton" role="button"><i class="fa fa-github fa-lg"></i> Edit me</a>
+    
+
+    
+
+    <div class="tags">
+        
+    </div>
+
+    
+
+</div>
+
+<hr class="shaded"/>
+
+<footer>
+            <div class="row">
+
+               <!-- Social Media links, etc -->
+               <div class="col-lg-6 footer">
+               
+    <a class="no-after social-icon" href="https://twitter.com/SingularityApp">
+      <i class="fa fa-4x fa-twitter no-after"></i>
+    </a>
+
+
+    <a class="no-after social-icon" href="https://github.com/singularityware">
+      <i class="fa fa-4x fa-github no-after"></i>
+    </a>
+
+
+
+               </div>
+
+                <div class="col-lg-6 footer">
+<p><img src="images/logo/logo.png" alt="Company logo" style="width:40px;padding-bottom:10px"/></p>
+ Site last generated: Oct 12, 2017 <br />
+                </div>
+            </div>
+</footer>
+
+
+    </div>
+    <!-- /.row -->
+</div>
+<!-- /.container -->
+    </div>
+
+</body>
+
+<!-- the google_analytics_id gets auto inserted from the config file -->
+
+
+
+<script>(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)})(window,document,'script','//www.google-analytics.com/analytics.js','ga');ga('create','UA-84672381-1','auto');ga('require','displayfeatures');ga('send','pageview');</script>
+
+
+</html>

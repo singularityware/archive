@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<meta name="description" content="   Singularity and Docker   These docs are for Singularity Version 2.4. For older versions, see our archive                                                 Singularity is good friends with Docker. The reason is because the developers use and really like using Docker, and scientists have already put much resources into creating Docker images. Thus, one of our early goals was to support Docker. What can you do?  You don’t need Docker installed  You can shell into a Singularity-ized Docker image  You can run a Docker image instantly as a Singularity image  You can pull a Docker image (without sudo)  You can build images with bases from assembed Docker layers that include environment, guts, and labelsTLDR (Too Long Didn’t Read)You can shell, import, run, and exec.singularity shell docker://ubuntu:latestsingularity run docker://ubuntu:latestsingularity exec docker://ubuntu:latest echo "Hello Dinosaur!"singularity pull docker://ubuntu:latestsingularity build ubuntu.img docker://ubuntu:latestImport a Docker image into a Singularity ImageThe core of a Docker image is basically a compressed set of files, a set of .tar.gz that (if you look in your Docker image folder on your host machine, you will see. The Docker Registry, which you probably interact with via Docker Hub, serves these layers. These are the layers that you see downloading when you interact with the docker daemon. We are going to use these same layers for Singularity!Quick Start: The Docker RegistryThe Docker engine communicates with the Docker Hub via the Docker Remote API, and guess what, we can too! The easiest thing to do is create an image, and then pipe a Docker image directly into it from the Docker Registry. You don’t need Docker installed on your machine, but you will need a working internet connection. Let’s create an ubuntu operating system, from Docker. We will pull, then build:singularity pull docker://ubuntuWARNING: pull for Docker Hub is not guaranteed to produce theWARNING: same image on repeated pull. Use Singularity RegistryWARNING: (shub://) to pull exactly equivalent images.Docker image path: index.docker.io/library/ubuntu:latestCache folder set to /home/vanessa/.singularity/docker[5/5] |===================================| 100.0% Importing: base Singularity environmentImporting: /home/vanessa/.singularity/docker/sha256:9fb6c798fa41e509b58bccc5c29654c3ff4648b608f5daa67c1aab6a7d02c118.tar.gzImporting: /home/vanessa/.singularity/docker/sha256:3b61febd4aefe982e0cb9c696d415137384d1a01052b50a85aae46439e15e49a.tar.gzImporting: /home/vanessa/.singularity/docker/sha256:9d99b9777eb02b8943c0e72d7a7baec5c782f8fd976825c9d3fb48b3101aacc2.tar.gzImporting: /home/vanessa/.singularity/docker/sha256:d010c8cf75d7eb5d2504d5ffa0d19696e8d745a457dd8d28ec6dd41d3763617e.tar.gzImporting: /home/vanessa/.singularity/docker/sha256:7fac07fb303e0589b9c23e6f49d5dc1ff9d6f3c8c88cabe768b430bdb47f03a9.tar.gzImporting: /home/vanessa/.singularity/metadata/sha256:77cece4ce6ef220f66747bb02205a00d9ca5ad0c0a6eea1760d34c744ef7b231.tar.gzWARNING: Building container as an unprivileged user. If you run this container as rootWARNING: it may be missing some functionality.Building Singularity image...Cleaning up...Singularity container built: ./ubuntu.imgThe warnings mean well - it is to tell you that you are creating the image on the fly from layers, and if one of those layers changes, you won’t produce the same image next time.The Build Specification file, SingularityJust like Docker has the Dockerfile, Singularity has a file called Singularity that (currently) applications like Singularity Hub know to sniff for. For reproducibility of your containers, our strong recommendation is that you build from these files. Any command that you issue to change a container sandbox (building with --sandbox) or to a build with --writable is by default not recorded, and your container loses its reproducibility. So let’s talk about how to make these files! First, let’s look at the absolute minimum requirement:Bootstrap: dockerFrom: ubuntuWe would save this content to a file called Singularity and then issue the following commands to bootstrap the image from the filesudo singularity build ubuntu.img SingularityDo you want to specify a particular tag? or version? You can just add that to the docker uri:Bootstrap: dockerFrom: ubuntu:latestNote that the default is latest. If you want to customize the Registry or Namespace, just add those to the header:Bootstrap: dockerFrom: ubuntuRegistry: pancakes.registry.index.ioNamespace: blue/berry/creamThe power of build comes with the other stuff that you can do! This means running specific install commands, specifying your containers runscript (what it does when you execute it), adding files, labels, and customizing the environment. Here is a full Singularity file:Bootstrap: dockerFrom: tensorflow/tensorflow:latest%runscript     exec /usr/bin/python "$@"%post    echo "Post install stuffs!"%files/home/vanessa/Desktop/analysis.py /tmp/analysis.pyrelative_path.py /tmp/analysis2.py%environmentTOPSECRET=pancakesHELLO=WORLDexport HELLO TOPSECRET%labelsAUTHOR VanessasaurIn the example above, I am overriding any Dockerfile ENTRYPOINT or CMD because I have defined a %runscript. If I want the Dockerfile ENTRYPOINT to take preference, I would remove the %runscript section. If I want to use CMD instead of ENTRYPOINT, I would again remove the runscript, and add IncludeCmd to the header:Bootstrap: dockerFrom: tensorflow/tensorflow:latestIncludeCmd: yes%post    echo "Post install stuffs!"Did you know that you can commit this Singularity file to a Github repo and it will automatically build for you when you push to Singularity Hub?. This will ensure maximum reproducibility of your work.How does the runscript work?Docker has two commands in the Dockerfile that have something to do with execution, CMD and ENTRYPOINT. The differences are subtle, but the best description I’ve found is the following:  A CMD is to provide defaults for an executing container.and  An ENTRYPOINT helps you to configure a container that you can run as an executable.Given the definition, the ENTRYPOINT is most appropriate for the Singularity %runscript, and so using the default bootstrap (whether from a docker:// endpoint or a Singularity spec file) will set the ENTRYPOINT variable as the runscript. You can change this behavior by specifying IncludeCmd: yes in the Spec file (see below). If you provide any sort of %runscript in your Spec file, this overrides anything provided in Docker. In summary, the order of operations is as follows:  If a %runscript is specified in the Singularity spec file, this takes prevalence over all  If no %runscript is specified, or if the import command is used as in the example above, the ENTRYPOINT is used as runscript.  If no %runscript is specified, but the user has a Singularity spec with IncludeCmd, then the Docker CMD is used.  If no %runscript is specified, and there is no CMD or ENTRYPOINT, the image’s default execution action is to run the bash shell.How do I specify my Docker image?In the example above, you probably saw that we referened the docker image first with the uri docker:// and that is important to tell Singularity that it will be pulling Docker layers. To ask for ubuntu, we asked for docker://ubuntu. This uri that we give to Singularity is going to be very important to choose the following Docker metadata items:  registry   (e.g., “index.docker.io”)  namespace  (e.g., “library”)  repository (e.g., “ubuntu”)  tag (e.g., “latest”) OR version (e.g., “@sha256:1234…)When we put those things together, it looks like this:docker://&lt;registry&gt;/&lt;namespace&gt;/&lt;repo_name&gt;:&lt;repo_tag&gt;By default, the minimum requirement is that you specify a repository name (eg, ubuntu) and it will default to the following:docker://index.docker.io/library/ubuntu:latestIf you provide a version instead of a tag, that will be used instead:docker://index.docker.io/library/ubuntu@sha256:1235...You can have one or the other, both are considered a “digest” in Docker speak.If you want to change any of those fields and are having trouble with the uri, you can also just state them explicitly:Bootstrap: dockerFrom: ubuntuRegistry: index.docker.ioNamespace: libraryCustom AuthenticationFor both import and build using a build spec file, by default we use the Docker Registry index.docker.io. Singularity first tries the call without a token, and then asks for one with pull permissions if the request is defined. However, it may be the case that you want to provide a custom token for a private registry. You have two options. You can either provide a Username and Password in the build specification file (if stored locally and there is no need to share), or (in the case of doing an import or needing to secure the credentials) you can export these variables to environmental variables. We provide instructions for each of these cases:Authentication in the Singularity Build FileYou can simply specify your additional authentication parameters in the header with the labels Username and Password:Username: vanessaPassword: [password]Again, this can be in addition to specification of a custom registry with the Registry parameter.Authentication in the EnvironmentYou can export your username, and password for Singularity as follows:export SINGULARITY_DOCKER_USERNAME=vanessasaurexport SINGULARITY_DOCKER_PASSWORD=rawwwwwrTesting AuthenticationIf you are having trouble, you can test your token by obtaining it on the command line and putting it into an environmental variable, CREDENTIAL:CREDENTIAL=$(echo -n vanessa:[password] | base64)TOKEN=$(http 'https://auth.docker.io/token?service=registry.docker.io&amp;scope=repository:vanessa/code-samples:pull' Authorization:"Basic $CREDENTIAL" | jq -r '.token')This should place the token in the environmental variable TOKEN. To test that your token is valid, you can do the followinghttp https://index.docker.io/v2/vanessa/code-samples/tags/list Authorization:"Bearer $TOKEN"The above call should return the tags list as expected. And of course you should change the repo name to be one that actually exists that you have credentials for.Best PracticesWhile most docker images can import and run without a hitch, there are some special cases for which things can go wrong. Here is a general list of suggested practices, and if you discover a new one in your building ventures please let us know.1. Installation to RootWhen using Docker, you typically run as root, meaning that root’s home at /root is where things will install given a specification of home. This is fine when you stay in Docker, or if the content at /root doesn’t need any kind of write access, but generally can lead to a lot of bugs because it is, after all, root’s home. This leads us to best practice #1.  Don’t install anything to root’s home, /root.2. Library ConfigurationsThe command ldconfig is used to update the shared library cache. If you have software that requires symbolic linking of libraries and you do the installation without updating the cache, then the Singularity image (in read only) will likely give you an error that the library is not found. If you look in the image, the library will exist but the symbolic link will not. This leads us to best practice #2:  Update the library cache at the end of your Dockerfile with a call to ldconfig.3. Don’t install to $HOME or $TMPWe can assume that the most common Singularity use case has the $USER home being automatically mounted to $HOME, and $TMP also mounted. Thus, given the potential for some kind of conflict or missing files, for best practice #3 we suggest the following:  Don’t put container valuables in $TMP or $HOMEHave any more best practices? Please let us know!TroubleshootingWhy won’t my image build work? If you can’t find an answer on this site, please ping us an issue.If you’ve found an answer and you’d like to see it on the site for others to benefit from, then post to us here.                Previous        Next                 Edit me                                                                                                                                                 Site last generated: Oct 12, 2017                             ">
+
+
+<meta name="name" content="Singularity and Docker">
+
+<meta name="thumbnail" content="http://singularity.lbl.gov/images/logo/logo.svg">
+
+
+
+
+<title>Singularity and Docker | Singularity</title>
+<link rel="stylesheet" href="assets/css/syntax.css">
+
+
+<link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+<link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet">
+<!--<link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">-->
+<link rel="stylesheet" href="assets/css/modern-business.css">
+<link rel="stylesheet" href="assets/css/lavish-bootstrap.css">
+<link rel="stylesheet" href="assets/css/customstyles.css">
+<link rel="stylesheet" href="assets/css/theme-blue.css">
+
+<link rel="stylesheet" type="text/css" href="assets/css/asciinema-player.css" />
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.min.js"></script>
+<script src="assets/js/jquery.navgoco.min.js"></script>
+
+
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/anchor-js/2.0.0/anchor.min.js"></script>
+<script src="assets/js/toc.js"></script>
+<script src="assets/js/customscripts.js"></script>
+
+<link rel="shortcut icon" href="images/favicon/favicon.ico">
+
+<!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+<!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+<!--[if lt IE 9]>
+<script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+<script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+<![endif]-->
+
+<link rel="alternate" type="application/rss+xml" title="" href="http://localhost:4005feed.xml">
+
+    <script>
+        $(document).ready(function() {
+
+            // Initialize navgoco with default options
+            $("#mysidebar").navgoco({
+                caretHtml: '',
+                accordion: true,
+                openClass: 'active', // open
+                save: false, // leave false or nav highlighting doesn't work right
+                cookie: {
+                    name: 'navgoco',
+                    expires: false,
+                    path: '/'
+                },
+                slide: {
+                    duration: 400,
+                    easing: 'swing'
+                }
+            });
+
+            $("#collapseAll").click(function(e) {
+                e.preventDefault();
+                $("#mysidebar").navgoco('toggle', false);
+            });
+
+            $("#expandAll").click(function(e) {
+                e.preventDefault();
+                $("#mysidebar").navgoco('toggle', true);
+            });
+
+        });
+
+    </script>
+    <script>
+        $(function () {
+            $('[data-toggle="tooltip"]').tooltip()
+        })
+    </script>
+    
+
+</head>
+<body>
+<!-- asciinema player -->
+<script src="assets/js/asciinema-player.js"></script>
+
+<!-- Show or hide players on button clicks-->
+<script>
+$( document ).ready(function() {
+    $(".asciinema-button").click(function(){
+        console.log('rawwwr!')
+        var asciinemaVideo = "#" + $(this).attr('data-id');
+        if ($(asciinemaVideo).hasClass('hidden')){
+            $(asciinemaVideo).removeClass('hidden');
+            $(this).text('Hide Tutorial')
+        } else {
+            $(asciinemaVideo).addClass('hidden');
+            $(this).text('Show Tutorial')
+        }
+        
+    });
+});
+</script>
+
+<!-- Navigation -->
+<nav class="navbar navbar-inverse navbar-fixed-top">
+    <div class="container topnavlinks">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="index.html">&nbsp;<span class="projectTitle"> Singularity</span></a>
+        </div>
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+            <ul class="nav navbar-nav navbar-right">
+                <!-- entries without drop-downs appear here -->
+                
+                
+                
+                <li><a href="blog">News</a></li>
+                
+                
+                
+                <!-- entries with drop-downs appear here -->
+                <!-- conditional logic to control which topnav appears for the audience defined in the configuration file.-->
+                
+                
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">Docs<b class="caret"></b></a>
+                    <ul class="dropdown-menu">
+                        
+                        
+                        <li><a href="admin-guide">Admin Guide</a></li>
+                        
+                        
+                        
+                        <li><a href="user-guide">User Guide</a></li>
+                        
+                        
+                        
+                        <li><a href="archive">Archive</a></li>
+                        
+                        
+                        
+                        <li><a href="links">Contributed Content</a></li>
+                        
+                        
+                    </ul>
+                </li>
+                
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">Quick Links<b class="caret"></b></a>
+                    <ul class="dropdown-menu">
+                        
+                        
+                        <li><a href="https://github.com/singularityware/singularity" target="_blank">Github Repo</a></li>
+                        
+                        
+                        
+                        <li><a href="https://groups.google.com/a/lbl.gov/forum/#!forum/singularity" target="_blank">Google Group</a></li>
+                        
+                        
+                        
+                        <li><a href="http://stackoverflow.com/questions/tagged/singularity" target="_blank">Singularity on Stack Overflow</a></li>
+                        
+                        
+                        
+                        <li><a href="https://singularity-hub.org/faq" target="_blank">Singularity Hub</a></li>
+                        
+                        
+                        
+                        <li><a href="https://singularity-container.slack.com" target="_blank">Slack</a></li>
+                        
+                        
+                        
+                        <li><a href="faq#troubleshooting">Troubleshooting</a></li>
+                        
+                        
+                    </ul>
+                </li>
+                
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">People<b class="caret"></b></a>
+                    <ul class="dropdown-menu">
+                        
+                        
+                        <li><a href="https://github.com/gmkurtzer" target="_blank">Gregory M. Kurtzer</a></li>
+                        
+                        
+                        
+                        <li><a href="https://github.com/vsoch" target="_blank">Vanessa Sochat</a></li>
+                        
+                        
+                        
+                        <li><a href="https://github.com/bauerm97" target="_blank">Michael Bauer</a></li>
+                        
+                        
+                        
+                        <li><a href="https://github.com/bbockelm" target="_blank">Brian Bockelman</a></li>
+                        
+                        
+                        
+                        <li><a href="https://github.com/singularityware/singularity/blob/master/AUTHORS.md" target="_blank">Complete Authors List</a></li>
+                        
+                        
+                    </ul>
+                </li>
+                
+                
+                
+                <li><a href="/search"><i class="fa fa-search"></i></li>
+                <!-- jekyll search hidden in favor of google
+                <li>
+                    <div id="search-demo-container">
+                        <input type="text" id="search-input" placeholder="search...">
+                        <ul id="results-container"></ul>
+                    </div>
+                    <script src="assets/js/jekyll-search.js" type="text/javascript"></script>
+                    <script type="text/javascript">
+                            SimpleJekyllSearch.init({
+                                searchInput: document.getElementById('search-input'),
+                                resultsContainer: document.getElementById('results-container'),
+                                dataSource: 'search.json',
+                                searchResultTemplate: '<li><a href="{url}" title="Singularity and Docker">{title}</a></li>',
+                    noResultsText: 'No results found.',
+                            limit: 10,
+                            fuzzy: true,
+                    })
+                    </script>
+                    end search-->
+                </li>
+            </ul>
+        </div>
+        </div>
+        <!-- /.container -->
+</nav>
+
+<!-- Page Content -->
+<div class="container">
+    <div class="col-lg-12">&nbsp;</div>
+    <!-- Content Row -->
+    <div class="row">
+        <!-- Sidebar Column -->
+        <div class="col-md-3">
+          
+
+
+
+
+
+
+<ul id="mysidebar" class="nav">
+
+    
+    <div class="shiny"><a href="\"><figure><img src="/images/logo/logo.svg" class="sidebar-logo"/></figure></a></div>
+    
+
+    <li class="sidebarTitle">User Guide</li>
+    
+    
+    
+    <li>
+        <a href="#">Getting Started</a>
+        <ul>
+            
+            
+            
+            <li><a href="user-guide">Introduction</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-installation">Installation</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="quickstart">Quick Start</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-build-container">Build a Container</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-recipes">Container Recipes</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-flow">Singularity Flow</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-mount">Bind Paths and Mounts</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-overlay">Persistent Overlays</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-instances">Running Services</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-user-checks">Container Checks</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-environment-metadata">Environment and Metadata</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-scif-apps">Reproducible SCI-F Apps</a></li>
+            
+            
+            
+            
+            
+            
+            <li class="active"><a href="docs-docker">Singularity and Docker</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="faq#troubleshooting">Troubleshooting</a></li>
+            
+            
+            
+            
+        </ul>
+        
+        
+    
+    <li>
+        <a href="#">Commands</a>
+        <ul>
+            
+            
+            
+            <li><a href="docs-usage">Command Usage</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-build">build</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-exec">exec</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-inspect">inspect</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-pull">pull</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-run">run</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-shell">shell</a></li>
+            
+            
+            
+            
+        </ul>
+        
+        
+    
+    <li>
+        <a href="#">Image Command Group</a>
+        <ul>
+            
+            
+            
+            <li><a href="docs-export">image.export</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-expand">image.expand</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-import">image.import</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-create">image.create</a></li>
+            
+            
+            
+            
+        </ul>
+        
+        
+    
+    <li>
+        <a href="#">Instance Command Group</a>
+        <ul>
+            
+            
+            
+            <li><a href="docs-instance-start">instance.start</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-instance-list">instance.list</a></li>
+            
+            
+            
+            
+            
+            
+            <li><a href="docs-instance-stop">instance.stop</a></li>
+            
+            
+            
+            
+        </ul>
+        
+        
+    
+    <li>
+        <a href="#">Deprecated</a>
+        <ul>
+            
+            
+            
+            <li><a href="docs-bootstrap">bootstrap</a></li>
+            
+            
+            
+            
+        </ul>
+        
+        
+        
+        <!-- if you aren't using the accordion, uncomment this block:
+           <p class="external">
+               <a href="#" id="collapseAll">Collapse All</a> | <a href="#" id="expandAll">Expand All</a>
+           </p>
+           -->
+    </li>
+</ul>
+</div>
+
+<!-- this highlights the active parent class in the navgoco sidebar. this is critical so that the parent expands when you're viewing a page. This must appear below the sidebar code above. Otherwise, if placed inside customscripts.js, the script runs before the sidebar code runs and the class never gets inserted.-->
+<script>$("li.active").parents('li').toggleClass("active");</script>
+
+    <!-- Content Column -->
+    <div class="col-md-9">
+        <div class="post-header">
+   <h1 class="post-title-main">Singularity and Docker</h1>
+   <small style="color: #666; margin-top:50px; font-variant:italic">These docs are for Singularity Version 2.4. For older versions, see our <a class="no-after" 
+                                                               href="https://singularityware.github.io/archive">archive</a></small>
+</div>
+
+
+
+<div class="post-content">
+
+   
+
+    <!-- Previous and next buttons-->
+    <div class="row" style="padding-top:30px; margin-bottom:10px"><div class="col-md-12">
+        <a href="#"><button style="float:left" class="hidden previous-button btn btn-circle btn-default"><i class="fa-2x fa fa-angle-double-left"></i></button></a>
+        <a href="#"><button style="float:right" class="hidden next-button btn btn-circle btn-default"><i class="fa fa-angle-double-right fa-2x"></i></button></a>
+    </div></div>
+
+    <script>
+    $(document).ready(function(){
+
+        var next = $("li.active").next().last().find('a').attr('href');
+        var previous = $("li.active").prev().last().find('a').attr('href');
+
+        // NEXT BUTTON
+        if (typeof next == 'undefined'){
+            console.log("disabling next button")
+            $(".next-button").addClass("hidden")
+        } else if (next == "#") {
+            next = $("li.active").next().find("li").first().find('a').attr('href');
+            $(".next-button").closest('a').attr('href', next)
+            $(".next-button").removeClass('hidden')
+        } else {
+            $(".next-button").closest('a').attr('href', next)
+            $(".next-button").removeClass('hidden')
+        }
+
+        // PREVIOUS BUTTON
+        if (typeof previous == 'undefined'){
+            console.log("disabling previous button")
+            $(".previous-button").addClass("hidden")
+        } else if (previous == "#") {
+            previous = $("li.active").prev().find("li").last().find('a').attr('href')
+            $(".previous-button").closest('a').attr('href', previous)
+            $(".previous-button").removeClass('hidden')
+        } else {
+            $(".previous-button").closest('a').attr('href', previous)
+            $(".previous-button").removeClass('hidden')
+        }
+
+    })
+    </script>
+
+    
+    
+<!-- this handles the automatic toc. use ## for subheads to auto-generate the on-page minitoc. if you use html tags, you must supply an ID for the heading element in order for it to appear in the minitoc. -->
+<script>
+$( document ).ready(function() {
+  // Handler for .ready() called.
+
+$('#toc').toc({ minimumHeaders: 0, listType: 'ul', showSpeed: 0, headers: 'h2,h3,h4' });
+
+/* this offset helps account for the space taken up by the floating toolbar. */
+$('#toc').on('click', 'a', function() {
+  var target = $(this.getAttribute('href'))
+    , scroll_target = target.offset().top
+
+  $(window).scrollTop(scroll_target - 10);
+  return false
+})
+  
+});
+</script>
+
+<div id="toc"></div>
+
+    
+
+  
+<!-- this handles the automatic toc. use ## for subheads to auto-generate the on-page minitoc. if you use html tags, you must supply an ID for the heading element in order for it to appear in the minitoc. -->
+<script>
+$( document ).ready(function() {
+  // Handler for .ready() called.
+
+$('#toc').toc({ minimumHeaders: 0, listType: 'ul', showSpeed: 0, headers: 'h2,h3,h4' });
+
+/* this offset helps account for the space taken up by the floating toolbar. */
+$('#toc').on('click', 'a', function() {
+  var target = $(this.getAttribute('href'))
+    , scroll_target = target.offset().top
+
+  $(window).scrollTop(scroll_target - 10);
+  return false
+})
+  
+});
+</script>
+
+<div id="toc"></div>
+
+<p>Singularity is good friends with Docker. The reason is because the developers use and really like using Docker, and scientists have already put much resources into creating Docker images. Thus, one of our early goals was to support Docker. What can you do?</p>
+
+<ul>
+  <li>You don’t need Docker installed</li>
+  <li>You can shell into a Singularity-ized Docker image</li>
+  <li>You can run a Docker image instantly as a Singularity image</li>
+  <li>You can pull a Docker image (without sudo)</li>
+  <li>You can build images with bases from assembed Docker layers that include environment, guts, and labels</li>
+</ul>
+
+<h1 id="tldr-too-long-didnt-read">TLDR (Too Long Didn’t Read)</h1>
+
+<p>You can shell, import, run, and exec.</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code>singularity shell docker://ubuntu:latest
+singularity run docker://ubuntu:latest
+singularity <span class="nb">exec </span>docker://ubuntu:latest <span class="nb">echo</span> <span class="s2">"Hello Dinosaur!"</span>
+
+singularity pull docker://ubuntu:latest
+singularity build ubuntu.img docker://ubuntu:latest
+</code></pre>
+</div>
+
+<h1 id="import-a-docker-image-into-a-singularity-image">Import a Docker image into a Singularity Image</h1>
+
+<p>The core of a Docker image is basically a compressed set of files, a set of <code class="highlighter-rouge">.tar.gz</code> that (if you look in your <a href="http://stackoverflow.com/questions/19234831/where-are-docker-images-stored-on-the-host-machine" target="_blank">Docker image folder</a> on your host machine, you will see. The Docker Registry, which you probably interact with via <a href="https://hub.docker.com" target="_blank">Docker Hub</a>, serves these layers. These are the layers that you see downloading when you interact with the docker daemon. We are going to use these same layers for Singularity!</p>
+
+<h2 id="quick-start-the-docker-registry">Quick Start: The Docker Registry</h2>
+<p>The Docker engine communicates with the Docker Hub via the <a href="https://docs.docker.com/engine/reference/api/docker_remote_api/" target="_blank">Docker Remote API</a>, and guess what, we can too! The easiest thing to do is create an image, and then pipe a Docker image directly into it from the Docker Registry. You don’t need Docker installed on your machine, but you will need a working internet connection. Let’s create an ubuntu operating system, from Docker. We will pull, then build:</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code>singularity pull docker://ubuntu
+WARNING: pull <span class="k">for </span>Docker Hub is not guaranteed to produce the
+WARNING: same image on repeated pull. Use Singularity Registry
+WARNING: <span class="o">(</span>shub://<span class="o">)</span> to pull exactly equivalent images.
+Docker image path: index.docker.io/library/ubuntu:latest
+Cache folder <span class="nb">set </span>to /home/vanessa/.singularity/docker
+<span class="o">[</span>5/5] |<span class="o">===================================</span>| 100.0% 
+Importing: base Singularity environment
+Importing: /home/vanessa/.singularity/docker/sha256:9fb6c798fa41e509b58bccc5c29654c3ff4648b608f5daa67c1aab6a7d02c118.tar.gz
+Importing: /home/vanessa/.singularity/docker/sha256:3b61febd4aefe982e0cb9c696d415137384d1a01052b50a85aae46439e15e49a.tar.gz
+Importing: /home/vanessa/.singularity/docker/sha256:9d99b9777eb02b8943c0e72d7a7baec5c782f8fd976825c9d3fb48b3101aacc2.tar.gz
+Importing: /home/vanessa/.singularity/docker/sha256:d010c8cf75d7eb5d2504d5ffa0d19696e8d745a457dd8d28ec6dd41d3763617e.tar.gz
+Importing: /home/vanessa/.singularity/docker/sha256:7fac07fb303e0589b9c23e6f49d5dc1ff9d6f3c8c88cabe768b430bdb47f03a9.tar.gz
+Importing: /home/vanessa/.singularity/metadata/sha256:77cece4ce6ef220f66747bb02205a00d9ca5ad0c0a6eea1760d34c744ef7b231.tar.gz
+WARNING: Building container as an unprivileged user. If you run this container as root
+WARNING: it may be missing some functionality.
+Building Singularity image...
+Cleaning up...
+Singularity container built: ./ubuntu.img
+</code></pre>
+</div>
+
+<p>The warnings mean well - it is to tell you that you are creating the image on the fly from layers, and if one of those layers changes, you won’t produce the same image next time.</p>
+
+<h2 id="the-build-specification-file-singularity">The Build Specification file, Singularity</h2>
+<p>Just like Docker has the Dockerfile, Singularity has a file called Singularity that (currently) applications like Singularity Hub know to sniff for. For reproducibility of your containers, our strong recommendation is that you build from these files. Any command that you issue to change a container sandbox (building with <code class="highlighter-rouge">--sandbox</code>) or to a build with <code class="highlighter-rouge">--writable</code> is by default not recorded, and your container loses its reproducibility. So let’s talk about how to make these files! First, let’s look at the absolute minimum requirement:</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code>Bootstrap: docker
+From: ubuntu
+</code></pre>
+</div>
+
+<p>We would save this content to a file called <code class="highlighter-rouge">Singularity</code> and then issue the following commands to bootstrap the image from the file</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code>sudo singularity build ubuntu.img Singularity
+</code></pre>
+</div>
+
+<p>Do you want to specify a particular tag? or version? You can just add that to the docker uri:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>Bootstrap: docker
+From: ubuntu:latest
+</code></pre>
+</div>
+
+<p>Note that the default is <code class="highlighter-rouge">latest</code>. If you want to customize the Registry or Namespace, just add those to the header:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>Bootstrap: docker
+From: ubuntu
+Registry: pancakes.registry.index.io
+Namespace: blue/berry/cream
+</code></pre>
+</div>
+
+<p>The power of build comes with the other stuff that you can do! This means running specific install commands, specifying your containers runscript (what it does when you execute it), adding files, labels, and customizing the environment. Here is a full Singularity file:</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code>Bootstrap: docker
+From: tensorflow/tensorflow:latest
+
+%runscript
+ 
+    <span class="nb">exec</span> /usr/bin/python <span class="s2">"</span><span class="nv">$@</span><span class="s2">"</span>
+
+%post
+
+    <span class="nb">echo</span> <span class="s2">"Post install stuffs!"</span>
+
+%files
+
+/home/vanessa/Desktop/analysis.py /tmp/analysis.py
+relative_path.py /tmp/analysis2.py
+
+%environment
+<span class="nv">TOPSECRET</span><span class="o">=</span>pancakes
+<span class="nv">HELLO</span><span class="o">=</span>WORLD
+<span class="nb">export </span>HELLO TOPSECRET
+
+%labels
+
+AUTHOR Vanessasaur
+</code></pre>
+</div>
+
+<p>In the example above, I am overriding any Dockerfile <code class="highlighter-rouge">ENTRYPOINT</code> or <code class="highlighter-rouge">CMD</code> because I have defined a <code class="highlighter-rouge">%runscript</code>. If I want the Dockerfile <code class="highlighter-rouge">ENTRYPOINT</code> to take preference, I would remove the <code class="highlighter-rouge">%runscript</code> section. If I want to use <code class="highlighter-rouge">CMD</code> instead of <code class="highlighter-rouge">ENTRYPOINT</code>, I would again remove the runscript, and add IncludeCmd to the header:</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code>Bootstrap: docker
+From: tensorflow/tensorflow:latest
+IncludeCmd: yes
+
+%post
+
+    <span class="nb">echo</span> <span class="s2">"Post install stuffs!"</span>
+</code></pre>
+</div>
+
+<p>Did you know that you can commit this Singularity file to a Github repo and it will automatically build for you when you push to <a href="https://singularity-hub.org" target="_blank">Singularity Hub?</a>. This will ensure maximum reproducibility of your work.</p>
+
+<h2 id="how-does-the-runscript-work">How does the runscript work?</h2>
+<p>Docker has two commands in the <code class="highlighter-rouge">Dockerfile</code> that have something to do with execution, <code class="highlighter-rouge">CMD</code> and <code class="highlighter-rouge">ENTRYPOINT</code>. The differences are subtle, but the best description I’ve found is the following:</p>
+
+<blockquote>
+  <p>A <code class="highlighter-rouge">CMD</code> is to provide defaults for an executing container.</p>
+</blockquote>
+
+<p>and</p>
+
+<blockquote>
+  <p>An <code class="highlighter-rouge">ENTRYPOINT</code> helps you to configure a container that you can run as an executable.</p>
+</blockquote>
+
+<p>Given the definition, the <code class="highlighter-rouge">ENTRYPOINT</code> is most appropriate for the Singularity <code class="highlighter-rouge">%runscript</code>, and so using the default bootstrap (whether from a <code class="highlighter-rouge">docker://</code> endpoint or a <code class="highlighter-rouge">Singularity</code> spec file) will set the <code class="highlighter-rouge">ENTRYPOINT</code> variable as the runscript. You can change this behavior by specifying <code class="highlighter-rouge">IncludeCmd: yes</code> in the Spec file (see below). If you provide any sort of <code class="highlighter-rouge">%runscript</code> in your Spec file, this overrides anything provided in Docker. In summary, the order of operations is as follows:</p>
+
+<ol>
+  <li>If a <code class="highlighter-rouge">%runscript</code> is specified in the <code class="highlighter-rouge">Singularity</code> spec file, this takes prevalence over all</li>
+  <li>If no <code class="highlighter-rouge">%runscript</code> is specified, or if the <code class="highlighter-rouge">import</code> command is used as in the example above, the <code class="highlighter-rouge">ENTRYPOINT</code> is used as runscript.</li>
+  <li>If no <code class="highlighter-rouge">%runscript</code> is specified, but the user has a <code class="highlighter-rouge">Singularity</code> spec with <code class="highlighter-rouge">IncludeCmd</code>, then the Docker <code class="highlighter-rouge">CMD</code> is used.</li>
+  <li>If no <code class="highlighter-rouge">%runscript</code> is specified, and there is no <code class="highlighter-rouge">CMD</code> or <code class="highlighter-rouge">ENTRYPOINT</code>, the image’s default execution action is to run the bash shell.</li>
+</ol>
+
+<h2 id="how-do-i-specify-my-docker-image">How do I specify my Docker image?</h2>
+
+<p>In the example above, you probably saw that we referened the docker image first with the uri <code class="highlighter-rouge">docker://</code> and that is important to tell Singularity that it will be pulling Docker layers. To ask for ubuntu, we asked for <code class="highlighter-rouge">docker://ubuntu</code>. This uri that we give to Singularity is going to be very important to choose the following Docker metadata items:</p>
+
+<ul>
+  <li>registry   (e.g., “index.docker.io”)</li>
+  <li>namespace  (e.g., “library”)</li>
+  <li>repository (e.g., “ubuntu”)</li>
+  <li>tag (e.g., “latest”) OR version (e.g., “@sha256:1234…)</li>
+</ul>
+
+<p>When we put those things together, it looks like this:</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code>docker://&lt;registry&gt;/&lt;namespace&gt;/&lt;repo_name&gt;:&lt;repo_tag&gt;
+</code></pre>
+</div>
+
+<p>By default, the minimum requirement is that you specify a repository name (eg, ubuntu) and it will default to the following:</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code>docker://index.docker.io/library/ubuntu:latest
+</code></pre>
+</div>
+
+<p>If you provide a version instead of a tag, that will be used instead:</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code>docker://index.docker.io/library/ubuntu@sha256:1235...
+</code></pre>
+</div>
+
+<p>You can have one or the other, both are considered a “digest” in Docker speak.</p>
+
+<p>If you want to change any of those fields and are having trouble with the uri, you can also just state them explicitly:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>Bootstrap: docker
+From: ubuntu
+Registry: index.docker.io
+Namespace: library
+</code></pre>
+</div>
+
+<h2 id="custom-authentication">Custom Authentication</h2>
+<p>For both import and build using a build spec file, by default we use the Docker Registry <code class="highlighter-rouge">index.docker.io</code>. Singularity first tries the call without a token, and then asks for one with pull permissions if the request is defined. However, it may be the case that you want to provide a custom token for a private registry. You have two options. You can either provide a <code class="highlighter-rouge">Username</code> and <code class="highlighter-rouge">Password</code> in the build specification file (if stored locally and there is no need to share), or (in the case of doing an import or needing to secure the credentials) you can export these variables to environmental variables. We provide instructions for each of these cases:</p>
+
+<h3 id="authentication-in-the-singularity-build-file">Authentication in the Singularity Build File</h3>
+<p>You can simply specify your additional authentication parameters in the header with the labels <code class="highlighter-rouge">Username</code> and <code class="highlighter-rouge">Password</code>:</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code>Username: vanessa
+Password: <span class="o">[</span>password]
+</code></pre>
+</div>
+
+<p>Again, this can be in addition to specification of a custom registry with the <code class="highlighter-rouge">Registry</code> parameter.</p>
+
+<h3 id="authentication-in-the-environment">Authentication in the Environment</h3>
+<p>You can export your username, and password for Singularity as follows:</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code><span class="nb">export </span><span class="nv">SINGULARITY_DOCKER_USERNAME</span><span class="o">=</span>vanessasaur
+<span class="nb">export </span><span class="nv">SINGULARITY_DOCKER_PASSWORD</span><span class="o">=</span>rawwwwwr
+</code></pre>
+</div>
+
+<h3 id="testing-authentication">Testing Authentication</h3>
+<p>If you are having trouble, you can test your token by obtaining it on the command line and putting it into an environmental variable, <code class="highlighter-rouge">CREDENTIAL</code>:</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code><span class="nv">CREDENTIAL</span><span class="o">=</span><span class="k">$(</span><span class="nb">echo</span> -n vanessa:[password] | base64<span class="k">)</span>
+<span class="nv">TOKEN</span><span class="o">=</span><span class="k">$(</span>http <span class="s1">'https://auth.docker.io/token?service=registry.docker.io&amp;scope=repository:vanessa/code-samples:pull'</span> Authorization:<span class="s2">"Basic </span><span class="nv">$CREDENTIAL</span><span class="s2">"</span> | jq -r <span class="s1">'.token'</span><span class="k">)</span>
+</code></pre>
+</div>
+
+<p>This should place the token in the environmental variable <code class="highlighter-rouge">TOKEN</code>. To test that your token is valid, you can do the following</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code>http https://index.docker.io/v2/vanessa/code-samples/tags/list Authorization:<span class="s2">"Bearer </span><span class="nv">$TOKEN</span><span class="s2">"</span>
+</code></pre>
+</div>
+
+<p>The above call should return the tags list as expected. And of course you should change the repo name to be one that actually exists that you have credentials for.</p>
+
+<h2 id="best-practices">Best Practices</h2>
+<p>While most docker images can import and run without a hitch, there are some special cases for which things can go wrong. Here is a general list of suggested practices, and if you discover a new one in your building ventures please <a href="https://www.github.com/singularityware/singularityware.github.io/issues" target="_blank">let us know</a>.</p>
+
+<h3 id="1-installation-to-root">1. Installation to Root</h3>
+<p>When using Docker, you typically run as root, meaning that root’s home at <code class="highlighter-rouge">/root</code> is where things will install given a specification of home. This is fine when you stay in Docker, or if the content at <code class="highlighter-rouge">/root</code> doesn’t need any kind of write access, but generally can lead to a lot of bugs because it is, after all, root’s home. This leads us to best practice #1.</p>
+
+<blockquote>
+  <p>Don’t install anything to root’s home, <code class="highlighter-rouge">/root</code>.</p>
+</blockquote>
+
+<h3 id="2-library-configurations">2. Library Configurations</h3>
+<p>The command <a href="https://codeyarns.com/2014/01/14/how-to-add-library-directory-to-ldconfig-cache/">ldconfig</a> is used to update the shared library cache. If you have software that requires symbolic linking of libraries and you do the installation without updating the cache, then the Singularity image (in read only) will likely give you an error that the library is not found. If you look in the image, the library will exist but the symbolic link will not. This leads us to best practice #2:</p>
+
+<blockquote>
+  <p>Update the library cache at the end of your Dockerfile with a call to ldconfig.</p>
+</blockquote>
+
+<h3 id="3-dont-install-to-home-or-tmp">3. Don’t install to $HOME or $TMP</h3>
+<p>We can assume that the most common Singularity use case has the $USER home being automatically mounted to <code class="highlighter-rouge">$HOME</code>, and <code class="highlighter-rouge">$TMP</code> also mounted. Thus, given the potential for some kind of conflict or missing files, for best practice #3 we suggest the following:</p>
+
+<blockquote>
+  <p>Don’t put container valuables in <code class="highlighter-rouge">$TMP</code> or <code class="highlighter-rouge">$HOME</code></p>
+</blockquote>
+
+<p>Have any more best practices? Please <a href="https://www.github.com/singularityware/singularityware.github.io/issues" target="_blank">let us know</a>!</p>
+
+<h2 id="troubleshooting">Troubleshooting</h2>
+<p>Why won’t my image build work? If you can’t find an answer on this site, please <a href="https://www.github.com/singularityware/singularity/issues" target="_blank">ping us an issue</a>.
+If you’ve found an answer and you’d like to see it on the site for others to benefit from, then post to us <a href="https://www.github.com/singularityware/singularityware.github.io/issues" target="_blank">here</a>.</p>
+
+
+
+    <!-- More navigation on the bottom -->
+    <div class="row" style="padding-top:30px; margin-bottom:10px"><div class="col-md-12">
+        <a href="#"><button style="width:20%; height: 70px; float:left" class="hidden previous-button btn btn-lg btn-default">Previous</button></a>
+        <a href="#"><button style="width:20%; height: 70px; float:right" class="hidden next-button btn btn-lg btn-default">Next</button></a>
+    </div></div>
+
+
+    
+
+    
+
+    <a style="margin-top:10px;margin-bottom:10px" target="_blank" href="https://github.com/singularityware/singularityware.github.io/blob/master/pages/_pages/docs/docs-docker.md" class="btn btn-default btn-xs githubEditButton" role="button"><i class="fa fa-github fa-lg"></i> Edit me</a>
+    
+
+    
+
+    <div class="tags">
+        
+    </div>
+
+    
+
+</div>
+
+<hr class="shaded"/>
+
+<footer>
+            <div class="row">
+
+               <!-- Social Media links, etc -->
+               <div class="col-lg-6 footer">
+               
+    <a class="no-after social-icon" href="https://twitter.com/SingularityApp">
+      <i class="fa fa-4x fa-twitter no-after"></i>
+    </a>
+
+
+    <a class="no-after social-icon" href="https://github.com/singularityware">
+      <i class="fa fa-4x fa-github no-after"></i>
+    </a>
+
+
+
+               </div>
+
+                <div class="col-lg-6 footer">
+<p><img src="images/logo/logo.png" alt="Company logo" style="width:40px;padding-bottom:10px"/></p>
+ Site last generated: Oct 12, 2017 <br />
+                </div>
+            </div>
+</footer>
+
+
+    </div>
+    <!-- /.row -->
+</div>
+<!-- /.container -->
+    </div>
+
+</body>
+
+<!-- the google_analytics_id gets auto inserted from the config file -->
+
+
+
+<script>(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)})(window,document,'script','//www.google-analytics.com/analytics.js','ga');ga('create','UA-84672381-1','auto');ga('require','displayfeatures');ga('send','pageview');</script>
+
+
+</html>
